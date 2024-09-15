@@ -12,84 +12,132 @@ OPERATORS = {
     ast.BitXor: operator.xor,
     ast.USub: operator.neg,
 }
-def split(text=str):
-    b = text.split("\n")
-    for j, i in enumerate(b):
-        if "#" in i:
-            b[j] = i[:i.find("#")]
-    text = "\n".join(b)
-    text = text.replace("\n", "")
+
+def split(text):
+    # Remove comments and join the text
+    lines = text.split("\n")
+    for i, line in enumerate(lines):
+        if "#" in line:
+            lines[i] = line.split("#")[0]
+    text = "".join(lines)
+
     res = []
     a = ""
     type_ = "str"
     layer = 0
     openm = "([{"
     closem = ")]}"
+    escape = False
+    in_string = False
+    string_char = ""
+
     for i in text:
-        if layer == 0:
-            if i in string.ascii_letters + string.digits:
+        if escape:
+            a += "\\" + i  # Add the escaped character with backslash
+            escape = False
+            continue
+
+        if i == "\\":
+            escape = True  # Next character is escaped
+            continue
+
+        if layer == 0:  # We're not inside a container
+            if in_string:
+                a += i  # Add characters to the string until it closes
+                if i == string_char:  # Closing quote matches the opening quote
+                    res.append(a)  # End of the string, add the full quoted string
+                    a = ""
+                    in_string = False
+                continue
+
+            if i in "'\"":  # Start of a string
+                if layer == 0:  # Only start a string if not inside a container
+                    if a:
+                        res.append(a)  # Add whatever is before the string (if any)
+                    a = i  # Start collecting the string, including the opening quote
+                    in_string = True
+                    string_char = i
+                    continue
+            if i in openm:  # Start of a container (parentheses, brackets, braces)
+                if a:
+                    res.append(a)  # Add the previous token before the container
+                a = i
+                layer += 1
+                #res.append(a)  # Add the opening container
+            elif i in string.ascii_letters + string.digits:  # Handle alphanumeric (strings)
                 if type_ == "str":
                     a += i
                 else:
-                    res.append(a)
+                    if a:
+                        res.append(a)
                     a = i
                     type_ = "str"
-            if i in string.punctuation and (i not in openm):
+            elif i in r"""!#$%&()*+,-./:;<=>?@[\]^_`{|}~""" and i not in openm:  # Handle punctuation
                 if type_ == "punc":
                     a += i
                 else:
-                    res.append(a)
+                    if a:
+                        res.append(a)
                     a = i
                     type_ = "punc"
-            if i == " ":
-                res.append(a)
+            elif i == " ":  # Handle spaces (reset current token)
+                if a:
+                    res.append(a)
                 a = ""
-            if i in openm:
-                layer += 1
-                res.append(a)
-                a = i
-                type_ = "container"
-        else:
+            elif i in closem:  # Handle closing a container (shouldn't happen at layer 0)
+                raise ValueError(f"Unexpected closing delimiter '{i}'")
+        else:  # We are inside a container
             a += i
-            if i in openm:
+            if i in openm:  # Nested container
                 layer += 1
-            if i in closem:
+            elif i in closem:  # Closing a container
                 layer -= 1
-            if layer == 0:
-                res.append(a)
-                a = ""
-                type_ = "str"
+                if layer == 0:  # Closed the container
+                    res.append(a)
+                    a = ""
+                    type_ = "str"
+
     if a:
         res.append(a)
-    try:
-        while True:
-            res.remove("")
-    except:
-        pass
+
+    # Remove empty strings from the result
+    res = [x for x in res if x]
+
     return res
+
+
 def toParams(val: str):
-    val = val.strip("()")
-    val = val.split(",")
-    for i, j in enumerate(val):
-        val[i] = j.strip(" ")
-    params = {}
+    val = val[1:-1].split(",")
+    res = {}
     for i in val:
-        i = i.split("=")
-        if len(i) == 1:
-            params[i[0]] = ("required", "")
-        if len(i) == 2:
-            params[i[0]] = ("optional", i[1])
-    return params
+        if "=" not in i:
+            res[i] = ("required", "")
+        else:
+            i = i.split("=")
+            res[i[0]] = ("optional", i[1])
+    return res
 def parseExpr(code: str, vars: dict):
     for i in vars:
         code = code.replace(i, str(vars[i]))
     return code
-def eval_vars(stmt: str, vars: dict):
-    for i in vars:
-        stmt = stmt.replace(i, str(vars[i]))
-    return eval(stmt)
-def run(code: str, functions={}, vars={}):
 
+def eval_vars(stmt: str, vars: dict):
+    stmt = parseExpr(stmt, vars)
+    try:
+        return eval(stmt)
+    except:
+        return str(stmt)
+def wrap_strings_recursively(data):
+    if isinstance(data, str):
+        # Check if the data is a string and wrap it with double quotes
+        return f'"{data}"'
+    elif isinstance(data, list):
+        # Recursively process each item in the list
+        return [wrap_strings_recursively(item) for item in data]
+    else:
+        # If it's neither a string nor a list, return it as is
+        return data
+def run(code: str, functions={}, vars={}):
     def find_until(tokens, index, end_token):
         result = []
         while index < len(tokens) and tokens[index] != end_token:
@@ -102,7 +150,6 @@ def run(code: str, functions={}, vars={}):
     code = split(code)
     print(code)
     index = 0
-    callstack = []
     while index < len(code):
         if code[index] == "func":
             index += 1
@@ -110,11 +157,12 @@ def run(code: str, functions={}, vars={}):
             index += 1
             params = toParams(code[index])
             index += 1
-            functions[func_name] = (params, code[index])
+            func_body = code[index]
+            functions[func_name] = (params, func_body)
         elif code[index] == "print":
             index += 1
             expr, index = find_until(code, index, ";")
-            print(eval_vars(" ".join(expr).strip("()"), vars))
+            print(eval_vars(" ".join(expr).strip("()"), wrap_strings_recursively(vars)))
         elif code[index] == "var":
             index += 1
             var_name = code[index]
@@ -155,13 +203,34 @@ def run(code: str, functions={}, vars={}):
                 vars[var_name] <<= expr
             elif op == "=":
                 vars[var_name] = expr
+        elif code[index] in functions:
+            func_name = code[index]
+            index += 1
+            args: list = list(eval_vars(code[index], vars))
+            args = wrap_strings_recursively(args)
+            builtin_args = functions[func_name][0]
+            body = functions[func_name][1][1:-1]
+            vars_ = {}
+            for j, i in enumerate(builtin_args):
+                if builtin_args[i][0] == "required":
+                    if len(args) < j + 1:
+                        raise Exception("Undefined arg " + i)
+                else:
+                    if len(args) < j + 1:
+                        args.append(builtin_args[i][1])
+                vars[i.strip()] = eval(str(args[j]))
+            vars_.update(vars)
+            functions, vars__ = run(body, functions, vars_)
+            index += 1
+
         index += 1
-run("""func greet(name, greeting="Hello") {print("hi");
-    }
-print("hello");
-print(13);
-var b = 2;
-var a = 1 + b;
-a -= 1;
-"Hello, world!";
-print(a + 1);""")
+
+    return functions, vars
+run("""
+func greet(name, greeting="Hello") {
+    print(greeting);
+}
+var a = 1;
+a += 1;
+greet("World", a);
+""")
