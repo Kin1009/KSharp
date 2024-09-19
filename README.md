@@ -1,8 +1,16 @@
 # K#
-K# is a programming language syntacically similar to V#, but with some additions
+K# is a programming language syntacically similar to V# or C# or C++ or python or etc, but with some additions
 # Changelog
-- Version 0.0.1: Failed, cant split long punc
+- Version 0.0.2: Function calls
 # TODO
 1. Add I/O functions
 2. while() and if()
-3. 
+3. Function returns
+
+
+
+
+
+
+
+...V#, i will take over, in a later time.
