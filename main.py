@@ -115,15 +115,61 @@ def toParams(val: str):
             i = i.split("=")
             res[i[0]] = ("optional", i[1])
     return res
+def eval_function(function_name: str, args: dict, functions: dict, vars: dict):
+    # Assuming eval_vars processes args and vars
+    args = eval_vars(functions, args, vars)
+    func_data = functions[function_name]
+    req = func_data[0]  # Function arguments
+    func_code = func_data[1][1:-1].strip()  # Function body
+
+    # Assuming merge_dict_with_list merges the function signature with args
+    merged_vars = merge_dict_with_list(req, args, vars)
+    merged_vars.update(vars)  # Ensure merged vars include all current vars
+
+    # Assuming run executes the function code and updates vars
+    returnval, functions, vars = run(func_code, functions, merged_vars)
+    return returnval, functions, vars
+
+def detect_and_replace_functions(functions: dict, code: str, vars: dict):
+    # Regex to match function calls
+    pattern = re.compile(r'(\w+)\s*\(([^)]*)\)')
+
+    def replace_function(match):
+        func_name = match.group(1)
+        args_str = match.group(2).strip()
+        args_list = [arg.strip() for arg in args_str.split(',')] if args_str else []
+
+        if func_name in functions:
+            func_signature = functions[func_name][0]  # Argument dictionary
+            required_args = list(func_signature.keys())
+
+            # Ensure the number of arguments provided matches the function signature
+            if len(args_list) == len(required_args):
+                args = dict(zip(required_args, args_list))  # Map argument names to values
+
+                # Call eval_function to get the return value of the function
+                returnval, functions, vars = eval_function(func_name, args, functions, vars)
+                return str(returnval)  # Replace function call with its return value
+            else:
+                raise ValueError(f"Error: Function {func_name} requires {len(required_args)} arguments, but {len(args_list)} were provided.")
+        else:
+            raise ValueError(f"Error: Function {func_name} not found.")
+
+    # Replace all function calls with their evaluated values
+    code_with_replaced_functions = pattern.sub(replace_function, code)
+    
+    return code_with_replaced_functions, functions, vars
 
 def parseExpr(functions: dict, code: str, vars: dict):
     for var in vars:
         # Using \b for word boundaries to match whole words only
         code = re.sub(rf'\b{re.escape(var)}\b', str(vars[var]), code)
+    code, functions, vars = detect_and_replace_functions(functions, code, vars)
     return code
 
 def eval_vars(functions: dict, stmt: str, vars: dict):
-    stmt = parseExpr(functions, stmt, vars)
+    stmt, functions, vars = parseExpr(functions, stmt, vars)
+    stmt, functions, vars = parseExpr(functions, stmt, vars)
     try:
         return eval(stmt)
     except:
@@ -181,7 +227,6 @@ def run(code: str, functions: dict={}, vars: dict={}):
     code = code.strip("{}")
     returnval = None
     code = split(code)
-    #print(code, functions, vars)
     index = 0
     while index < len(code):
         if code[index] == "func":
@@ -192,6 +237,29 @@ def run(code: str, functions: dict={}, vars: dict={}):
             index += 1
             func_body = code[index]
             functions[func_name] = (params, func_body)
+        elif code[index] == "if":
+            index += 1
+            conditions = code[index]
+            conditions.replace("||", " or ")
+            conditions.replace("&&", " and ")
+            conditions.replace("!", " not ")  
+            condtitions = eval_vars(functions, conditions, vars)
+            index += 1
+            if condtitions:
+                returnval_, functions, vars = run(code[index][1:-1], functions, vars)
+            index += 1
+        elif code[index] == "while":
+            index += 1
+            conditions = code[index]
+            conditions.replace("||", " or ")
+            conditions.replace("&&", " and ")
+            conditions.replace("!", " not ")  
+            index += 1
+            condtitions = eval_vars(functions, conditions, vars)
+            while condtitions:
+                returnval_, functions, vars = run(code[index][1:-1], functions, vars)
+                condtitions = eval_vars(functions, conditions, vars)
+            index += 1
         elif code[index] == "python":
             index += 1
             expr, index = find_until(code, index, ";")
@@ -249,28 +317,20 @@ def run(code: str, functions: dict={}, vars: dict={}):
             func_code = funcdata[1][1:-1].strip("{")
             meet = merge_dict_with_list(req, args, vars)
             meet.update(vars)
-            returnval_, functions, vars_ = run(func_code, functions, meet)
+            returnval_, functions, vars = run(func_code, functions, meet)
         elif code[index] == "return":
             index += 1
             expr, index = find_until(code, index, ";")
             return eval_vars(functions, " ".join(expr), vars), functions, vars
 
         index += 1
-
     return returnval, functions, vars
 
 run("""
-func print(b) {
-    python("print(\"b\")");
+func a() {
+    var d = 1;
+    return d;
 }
-func wait(b) {
-    python("input(\"b\")");
-}
-func greet(abc="'sbf'") {
-    wait(abc);
-    return abc;
-}
-var a = 1;
-a += 1;
-greet();
+var b = a();
+python("print(\"b\")");
 """)
