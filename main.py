@@ -1,6 +1,6 @@
 import string, ast
 import operator
-
+import re
 # Supported operations
 OPERATORS = {
     ast.Add: operator.add,
@@ -57,13 +57,11 @@ def split(text):
                     a = i  # Start collecting the string, including the opening quote
                     in_string = True
                     string_char = i
-                    continue
             if i in openm:  # Start of a container (parentheses, brackets, braces)
                 if a:
                     res.append(a)  # Add the previous token before the container
                 a = i
                 layer += 1
-                #res.append(a)  # Add the opening container
             elif i in string.ascii_letters + string.digits:  # Handle alphanumeric (strings)
                 if type_ == "str":
                     a += i
@@ -110,23 +108,27 @@ def toParams(val: str):
     val = val[1:-1].split(",")
     res = {}
     for i in val:
+        i = i.strip()
         if "=" not in i:
             res[i] = ("required", "")
         else:
             i = i.split("=")
             res[i[0]] = ("optional", i[1])
     return res
-def parseExpr(code: str, vars: dict):
-    for i in vars:
-        code = code.replace(i, str(vars[i]))
+
+def parseExpr(functions: dict, code: str, vars: dict):
+    for var in vars:
+        # Using \b for word boundaries to match whole words only
+        code = re.sub(rf'\b{re.escape(var)}\b', str(vars[var]), code)
     return code
 
-def eval_vars(stmt: str, vars: dict):
-    stmt = parseExpr(stmt, vars)
+def eval_vars(functions: dict, stmt: str, vars: dict):
+    stmt = parseExpr(functions, stmt, vars)
     try:
         return eval(stmt)
     except:
         return str(stmt)
+
 def wrap_strings_recursively(data):
     if isinstance(data, str):
         # Check if the data is a string and wrap it with double quotes
@@ -137,7 +139,37 @@ def wrap_strings_recursively(data):
     else:
         # If it's neither a string nor a list, return it as is
         return data
-def run(code: str, functions={}, vars={}):
+
+def merge_dict_with_list(struct, values, vars):
+    # Prepare the output dictionary
+    result = {}
+    
+    # Extract required fields
+    required_fields = [key for key, (status, _) in struct.items() if status == "required"]
+
+    # Check if there are enough values for required fields
+    if len(values) < len(required_fields):
+        raise ValueError("Error: Not enough args for required fields")
+    if values == "(,)":
+        values = ()
+    # Iterate through the struct and merge with values
+    index = 0
+    for key, (status, default_value) in struct.items():
+        if status == "required":
+            if len(values) >= index + 1:
+                result[key] = values[index]
+            else:
+                print("Error: Not enough args")
+                raise ValueError
+        else:
+            if len(values) < index + 1:
+                result[key] = default_value
+            else:
+                result[key] = values[index]
+        index += 1
+    return result
+
+def run(code: str, functions: dict={}, vars: dict={}):
     def find_until(tokens, index, end_token):
         result = []
         while index < len(tokens) and tokens[index] != end_token:
@@ -147,8 +179,9 @@ def run(code: str, functions={}, vars={}):
 
     # Remove the outermost curly braces and split the code
     code = code.strip("{}")
+    returnval = None
     code = split(code)
-    print(code)
+    #print(code, functions, vars)
     index = 0
     while index < len(code):
         if code[index] == "func":
@@ -159,23 +192,24 @@ def run(code: str, functions={}, vars={}):
             index += 1
             func_body = code[index]
             functions[func_name] = (params, func_body)
-        elif code[index] == "print":
+        elif code[index] == "python":
             index += 1
             expr, index = find_until(code, index, ";")
-            print(eval_vars(" ".join(expr).strip("()"), wrap_strings_recursively(vars)))
+            #print(parseExpr(functions, expr[0][1:-1], wrap_strings_recursively(vars)))
+            exec(parseExpr({}, expr[0][1:-1], wrap_strings_recursively(vars))[1:-1])
         elif code[index] == "var":
             index += 1
             var_name = code[index]
             index += 2  # Skip over "="
             expr, index = find_until(code, index, ";")
-            vars[var_name] = eval_vars(" ".join(expr), vars)
+            vars[var_name] = eval_vars(functions, " ".join(expr), vars)
         elif code[index] in vars:
             var_name = code[index]
             index += 1
             op = code[index]
             index += 1
             expr, index = find_until(code, index, ";")
-            expr = eval_vars(" ".join(expr), vars)
+            expr = eval_vars(functions, " ".join(expr), vars)
             
             if op == "+=":
                 vars[var_name] += expr
@@ -206,31 +240,37 @@ def run(code: str, functions={}, vars={}):
         elif code[index] in functions:
             func_name = code[index]
             index += 1
-            args: list = list(eval_vars(code[index], vars))
-            args = wrap_strings_recursively(args)
-            builtin_args = functions[func_name][0]
-            body = functions[func_name][1][1:-1]
-            vars_ = {}
-            for j, i in enumerate(builtin_args):
-                if builtin_args[i][0] == "required":
-                    if len(args) < j + 1:
-                        raise Exception("Undefined arg " + i)
-                else:
-                    if len(args) < j + 1:
-                        args.append(builtin_args[i][1])
-                vars[i.strip()] = eval(str(args[j]))
-            vars_.update(vars)
-            functions, vars__ = run(body, functions, vars_)
+            args, index = find_until(code, index, ")")
+            args = args[0]  # remove the last empty element due to split by comma
+            args = args[:-1] + ",)"
+            args = eval_vars(functions, args, vars)
+            funcdata = functions[func_name]
+            req = funcdata[0]
+            func_code = funcdata[1][1:-1].strip("{")
+            meet = merge_dict_with_list(req, args, vars)
+            meet.update(vars)
+            returnval_, functions, vars_ = run(func_code, functions, meet)
+        elif code[index] == "return":
             index += 1
+            expr, index = find_until(code, index, ";")
+            return eval_vars(functions, " ".join(expr), vars), functions, vars
 
         index += 1
 
-    return functions, vars
+    return returnval, functions, vars
+
 run("""
-func greet(name, greeting="Hello") {
-    print(greeting);
+func print(b) {
+    python("print(\"b\")");
+}
+func wait(b) {
+    python("input(\"b\")");
+}
+func greet(abc="'sbf'") {
+    wait(abc);
+    return abc;
 }
 var a = 1;
 a += 1;
-greet("World", a);
+greet();
 """)
