@@ -12,5 +12,3 @@ K# is a programming language syntacically similar to V# or C# or C++ or python o
 
 
 
-
-...V#, i will take over, in a later time.
