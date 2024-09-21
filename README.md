@@ -10,17 +10,59 @@ K# is a programming language syntacically similar to V# or C# or C++ or python o
 3. Add REPL
 4. Add file type: *.ks
 
-# V#
-# V#
-# V#
-# V#
-# V#
-# V#
-# V#
-# V#
-# V#
-# V#
-# V#
-# V#
-# V#
-# V#
+<br/>
+<br/>
+<br/>
+<br/>
+<br/>
+<br/>
+<br/>
+<br/>
+<br/>
+<br/>
+<br/>
+<br/>
+<br/>
+<br/>
+<br/>
+<br/>
+<br/>
+<br/>
+<br/>
+<br/>
+<br/>
+<br/>
+<br/>
+<br/>
+<br/>
+
+@Funcieq if ur reading this stop now
+
+<br/>
+<br/>
+<br/>
+<br/>
+<br/>
+<br/>
+<br/>
+<br/>
+<br/>
+<br/>
+<br/>
+<br/>
+<br/>
+<br/>
+<br/>
+<br/>
+<br/>
+<br/>
+<br/>
+<br/>
+<br/>
+<br/>
+<br/>
+<br/>
+<br/>
+
+v#
+i will be the 2nd competitor of diy languages, v# ur time is almost over
