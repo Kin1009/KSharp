@@ -1,5 +1,4 @@
-import string, ast
-import operator
+import string
 import re
 debug_ = 0
 def debug(*args):
@@ -132,9 +131,7 @@ def detect_and_replace_functions(functions: dict, code: str, vars: dict):
             args = code[index]
             replace = "evalp" + args
             value = eval(args[1:-1])
-            code = "".join(code)
-            code = code.replace(replace, str(value))
-            code = split(code)
+            code = "".join(code).replace(replace, str(value))
         index += 1
     if isinstance(code, list):
         code = "".join(code)
@@ -149,7 +146,6 @@ def parseExpr(functions: dict, code: str, vars: dict):
     code = detect_and_replace_functions(functions, code, vars)
     debug("code2", code)
     return code
-
 
 def eval_vars(functions: dict, stmt: str, vars: dict):
     stmt = parseExpr(functions, stmt, vars)
@@ -171,7 +167,7 @@ def wrap_strings_recursively(data):
         # If it's neither a string nor a list, return it as is
         return data
 
-def merge_dict_with_list(struct, values, vars):
+def merge_dict_with_list(struct, values):
     # Prepare the output dictionary
     result = {}
     
@@ -200,14 +196,20 @@ def merge_dict_with_list(struct, values, vars):
     return result
 def run_function(functions, function_name, args: str, vars):
     func_name = function_name
-    args = ",".join(args[:-1])  # Correctly handle the arguments
+    #print(args)
+    args = args[1:-1]
+    args += ","
+    args = "(" + args + ")"
     args = eval_vars(functions, args, vars)  # Evaluate the arguments
+    #print(args)
     funcdata = functions[func_name]
     req = funcdata[0]
     func_code = funcdata[1]
-    merged_vars = merge_dict_with_list(req, args, vars)
+    merged_vars = merge_dict_with_list(req, args)
     merged_vars.update(vars)
-    return run(func_code, functions, merged_vars)  # Fix to pass the merged variables
+    returnval, a, b = run(func_code, functions, merged_vars)
+    del merged_vars
+    return returnval  # Fix to pass the merged variables
 def run(code: str, functions: dict={}, vars: dict={}):
     def find_until(tokens, index, end_token):
         result = []
@@ -239,7 +241,7 @@ def run(code: str, functions: dict={}, vars: dict={}):
             condtitions = eval_vars(functions, conditions, vars)
             index += 1
             if condtitions:
-                returnval_ = run(code[index][1:-1], functions, vars)
+                returnval_, functions_, vars = run(code[index][1:-1], functions, vars)
             index += 1
         elif code[index] == "while":
             index += 1
@@ -250,8 +252,19 @@ def run(code: str, functions: dict={}, vars: dict={}):
             index += 1
             condtitions = eval_vars(functions, conditions, vars)
             while condtitions:
-                returnval_ = run(code[index][1:-1], functions, vars)
+                returnval_, functions_, vars = run(code[index][1:-1], functions, vars)
                 condtitions = eval_vars(functions, conditions, vars)
+            index += 1
+        elif code[index] == "using":
+            index += 1
+            data = ""
+            filepath = code[index]
+            filepath = filepath[1:-1]
+            with open(filepath) as file:
+                data = file.read()
+            _, functions1, vars1 = run(data)
+            functions.update(functions1)
+            vars.update(vars1)
             index += 1
         elif code[index] == "execp":
             index += 1
@@ -264,8 +277,9 @@ def run(code: str, functions: dict={}, vars: dict={}):
             var_name = code[index]
             index += 2  # Skip over "="
             expr, index = find_until(code, index, ";")
-            debug("var", eval_vars(functions, "".join(expr), vars), type(eval_vars(functions, "".join(expr), vars)))
-            vars[var_name] = eval_vars(functions, "".join(expr), vars)
+            a = eval_vars(functions, "".join(expr), vars)
+            debug("var", a, type(a))
+            vars[var_name] = a
         elif code[index] in vars:
             var_name = code[index]
             index += 1
@@ -305,15 +319,13 @@ def run(code: str, functions: dict={}, vars: dict={}):
         elif code[index] == "return":
             index += 1
             expr, index = find_until(code, index, ";")
-            return eval_vars(functions, "".join(expr), vars)
+            return eval_vars(functions, "".join(expr), vars), functions, vars
         debug(vars)
         index += 1
-    return returnval
+    return returnval, functions, vars
 
-run("""
-func a(c) {
-    return 1;
-}
-var b = evalp("1 + 1");
-execp("print("b")");
-""")
+import sys
+args = sys.argv[1:]
+file = args[0]
+with open(file) as f:
+    run(f.read())
