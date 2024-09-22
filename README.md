@@ -13,6 +13,8 @@ K# is a programming language syntacically similar to V# or C# or C++ or python o
 4. eval() full working
 5. Handling errors
 6. try catch
+7. add installer
+7a. find eval() in exe, completely usable python code
 
 <br/>
 <br/>
@@ -68,5 +70,4 @@ K# is a programming language syntacically similar to V# or C# or C++ or python o
 <br/>
 <br/>
 
-v#
-i will be the 2nd competitor of diy languages, v# ur time is almost over
+theres nothing
