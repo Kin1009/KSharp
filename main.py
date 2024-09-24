@@ -160,6 +160,24 @@ def detect_and_replace_functions(functions: dict, code: str, vars: dict):
         if code[index][0] in "[({":
             a = detect_and_replace_functions_args(functions, code[index], vars)
             code[index] = a
+        elif code[index] in vars:
+            index += 1
+            if code[index][0] == "[":
+                range_ = code[index]
+                range__ = range_[1:-1].split(":")
+                for i, j in enumerate(range_):
+                    range__[i] = int(eval_vars(functions, range_[i], vars))
+                value = eval_vars(functions, code[index - 1], vars)
+                if len(range__) == 1:
+                    value = value[range__[0]]
+                elif len(range__) == 2:
+                    value = value[range__[0]:range__[1]]
+                elif len(range__) == 3:
+                    value = value[range__[0]:range__[1]:range__[2]]
+                code = "".join(code)
+                code = code.replace(code[index - 1] + range_, str(value))
+            else:
+                index -= 1
         elif code[index] in functions:
             func_name = code[index]
             index += 1
