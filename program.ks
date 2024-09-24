@@ -1,3 +1,6 @@
+using "modules/test.ks";
 using "modules/io.ks";
-using "modules/math.ks";
-print(random(1, 10));
+var a = range(0, 11, 1);
+for (i, a) {
+    print(i);
+}

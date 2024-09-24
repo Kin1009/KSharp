@@ -375,6 +375,20 @@ def run(code: str, functions: dict={}, vars: dict={}):
             index += 1
             expr, index = find_until(code, index, ";")
             return eval_vars(functions, "".join(expr), vars), functions, vars
+        elif code[index] == "for":
+            index += 1
+            con = code[index]
+            con = con[1:-1].strip().split(",")
+            mvar = con[0]
+            iterable = con[1]
+            iterable = eval_vars(functions, iterable, vars)
+            index += 1
+            for i in iterable:
+                update_vars = vars
+                update_vars.update({mvar: i})
+                r, functions, vars = run(code[index], functions, vars)
+                vars.pop(mvar, "")    
+            index += 1
         debug(vars)
         index += 1
     #print(vars)
@@ -389,5 +403,5 @@ def main():
 try:
     main()
 except Exception as e:
-    #raise e
+    raise e
     print("Error: " + e.__repr__())
