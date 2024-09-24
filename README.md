@@ -6,16 +6,15 @@ K# is a programming language syntacically similar to V# or C# or C++ or python o
 - Version 1.1.0: add using
 - Version 1.2.0: Fixed some bugs, turned execp to a keyword and working evalp()!
 - Version 1.2.4: Added function nesting
+- Version 1.2.5a: Added some custom modules (doesn't work)
+- Version 1.2.5b: Added 'this' kw (alavable on modify/create vars, plan on class)
 # TODO
 1. Add REPL
-2. Better intergration between python and K#
-3. maybe i need some builtin functions cuz this is all modules, even print() needs a module for it
-4. eval() full working
-5. Handling errors
-6. try catch
-7. add installer
-7a. find eval() in exe, completely usable python code
-
+2. Handling errors
+3. try catch
+4. add installer
+    - find eval() in exe, completely usable python code
+5. Add for, foreach and classes
 <br/>
 <br/>
 <br/>
