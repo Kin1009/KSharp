@@ -8,7 +8,7 @@ K# is a programming language syntacically similar to V# or C# or C++ or python o
 - Version 1.2.4: Added function nesting
 - Version 1.2.5a: Added some custom modules (doesn't work)
 - Version 1.2.5b: Added 'this' kw (alavable on modify/create vars, plan on class)
-- Version 1.2.6: Added 'for' kw, added range()
+- Version 1.2.6: Added 'for' kw, added range() (on "modules/test.ks")
 # TODO
 1. Add REPL
 2. Handling errors
@@ -16,6 +16,7 @@ K# is a programming language syntacically similar to V# or C# or C++ or python o
 4. add installer
     - find eval() in exe, completely usable python code
 5. Add classes
+6. Better modules
 <br/>
 <br/>
 <br/>
