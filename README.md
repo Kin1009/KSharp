@@ -1,5 +1,6 @@
 # K#
 K# is a programming language syntacically similar to V# or C# or C++ or python or etc, but with some additions
+WARNING: .ks interferes with KerboScript, so either choose K# or Kerbo if you installed it
 # Changelog
 - Version 0.0.2: Function calls
 - Version 1.0.0: yea i skipped but uhh basics are complete

@@ -421,5 +421,5 @@ def main():
 try:
     main()
 except Exception as e:
-    raise e
+    #raise e
     print("Error: " + e.__repr__())
