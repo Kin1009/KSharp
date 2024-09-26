@@ -194,9 +194,13 @@ def detect_and_replace_functions(functions: dict, code: str, vars: dict):
             index += 1
             args = code[index]
             replace = "evalp" + args
+            #print(args)
             value = eval(args[1:-1])
+            if type(value) == str:
+                value = f"str(\'{value}\')"
             code = "".join(code).replace(replace, str(value))
             code = split(code)
+            index += 1
         index += 1
     if isinstance(code, list):
         code = "".join(code)
@@ -213,14 +217,12 @@ def detect_and_replace_functions_args(functions, args, vars):
     #print(a)
     return a
 def parseExpr(functions: dict, code: str, vars: dict):
-    #print(code)
+    #raise Exception()
     #debug("a" + code)
     for var in vars:
         # Using \b for word boundaries to match whole words only
         code = re.sub(rf'\b{re.escape(var)}\b', str(vars[var]), code)
-    debug("code", code)
     code = detect_and_replace_functions(functions, code, vars)
-    debug("code2", code)
     return code
 
 def eval_vars(functions: dict, stmt: str, vars: dict):
@@ -339,6 +341,7 @@ def run(code: str, functions: dict={}, vars: dict={}):
             index += 1
             expr, index = find_until(code, index, ";")
             expr = parseExpr(functions, expr[0], wrap_strings_recursively(vars))[1:-1]  # Fix parsing and execution
+            #print(expr)
             debug(expr[1:-1])
             #print(expr[1:-1])
             exec(expr)
@@ -407,19 +410,26 @@ def run(code: str, functions: dict={}, vars: dict={}):
                 r, functions, vars = run(code[index], functions, vars)
                 vars.pop(mvar, "")    
             index += 1
+        elif code[index] == "try":
+            varsnapshot = vars
+            functionsnapshot = functions
+            index += 1
+            ex = 0
+            try:
+                returnval_, functions, vars = run(code[index][1:-1], functions, vars)
+            except:
+                ex = 1
+                vars = varsnapshot
+                functions = functionsnapshot
+                index += 2
+                returnval_, functions, vars = run(code[index][1:-1], functions, vars)
+            index += 1
+            if ex == 0:
+                index += 1
         debug(vars)
         index += 1
     #print(vars)
     return returnval, functions, vars
-def main():
-    import sys
-    args = sys.argv[1:]
-    file = args[0]
-    with open(file) as f:
-        run(f.read())
+def main(content):
+    run(content)
 #print(eval_vars({'print': ({'a': ('required', '')}, '{    execp("print("a")");}'), 'input': ({'c': ('required', '')}, '{    var d = evalp("input(\\"c\\")");    return d;}'), 'pow': ({'a': ('required', ''), 'b': ('required', '')}, '{    var c = a ** b;    return c;}'), 'mod': ({'a': ('required', ''), 'b': ('required', '')}, '{    var c = a % b;    return c;}'), 'abs': ({'n': ('required', '')}, '{    if (n >= 0) {        return n;    }    if (n < 0) {        n -= n;        n -= n;        return n;    }}'), 'sqrt': ({'n': ('required', '')}, '{    return pow(n, 0.5);}'), 'min': ({'a': ('required', ''), 'b': ('required', '')}, '{    if (a < b) {        return a;    }    return b;}'), 'max': ({'a': ('required', ''), 'b': ('required', '')}, '{    if (a < b) {        return b;    }    return a;}'), 'floor': ({'n': ('required', '')}, '{    if (mod(n, 1) == 0) {        return n;    }    return n - mod(n, 1);}'), 'ceil': ({'n': ('required', '')}, '{    if (mod(n, 1) == 0) {        return n;    }    return n + 1 - mod(n, 1);}'), 'round': ({'n': ('required', '')}, '{    var decimalPart = mod(n, 1);    if (decimalPart >= 0.5) {        return ceil(n);    }    return floor(n);}'), 'sign': ({'n': ('required', '')}, '{    if (n > 0) {        return 1;    }    if (n < 0) {        return -1;    }    return 0;}'), 'exp': ({'n': ('required', '')}, '{    return pow(E, n);}'), 'log': ({'n': ('required', '')}, '{    var result = 0;    var approx = n - 1;    while (approx > 0) {        approx = approx / E;        result += 1;    }    return result;}'), 'fact': ({'n': ('required', '')}, '{    if (n == 0) {        return 1;    }    if (n > 0) {        var b = fact(n - 1);        b *= n;        return b;    }}'), 'gcd': ({'a': ('required', ''), 'b': ('required', '')}, '{    while (b != 0) {        var temp = b;        b = mod(a, b);        a = temp;    }    return a;'), 'g': ({'a': ('required', ''), 'b': ('required', '')}, '{    if (a < b) {        return "1";    }    return "2";}')}, "(a < b)", {"a": 1, "b": 2}))
-try:
-    main()
-except Exception as e:
-    #raise e
-    print("Error: " + e.__repr__())

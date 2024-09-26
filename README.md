@@ -11,6 +11,7 @@ WARNING: .ks interferes with KerboScript, so either choose K# or Kerbo if you in
 - Version 1.2.5b: Added 'this' kw (alavable on modify/create vars, plan on class)
 - Version 1.2.6: Added 'for' kw, added range() (on "modules/test.ks")
 - Version 1.2.7: Added slicing (a[1:4])
+- Version 1.2.8f: Failed, but added compiler
 # TODO
 1. Add REPL
 2. Handling errors
