@@ -148,7 +148,7 @@ def run_function(functions, function_name, args: str, vars):
     func_code = funcdata[1]
     merged_vars = merge_dict_with_list(req, args)
     merged_vars.update(vars)
-    returnval, a, b = run(func_code, functions, merged_vars)
+    returnval, a, b, returned = run(func_code, functions, merged_vars)
     del merged_vars
     return returnval  # Fix to pass the merged variables
 def detect_and_replace_functions(functions: dict, code: str, vars: dict):
@@ -196,9 +196,12 @@ def detect_and_replace_functions(functions: dict, code: str, vars: dict):
             replace = "evalp" + args
             #print(args)
             value = eval(args[1:-1])
-            if type(value) == str:
-                value = f"str(\'{value}\')"
-            code = "".join(code).replace(replace, str(value))
+            #if type(value) == str:
+            #    value = f"repr(\'{value}\')"
+            if type(value) != str:
+                code = "".join(code).replace(replace, str(value))
+            else:
+                code = "".join(code).replace(replace, "\"" + value  + "\"")
             code = split(code)
             index += 1
         index += 1
@@ -228,6 +231,9 @@ def parseExpr(functions: dict, code: str, vars: dict):
 def eval_vars(functions: dict, stmt: str, vars: dict):
     stmt = parseExpr(functions, stmt, vars)
     debug(stmt)
+    #print(stmt)
+    if stmt.startswith("\"") and not stmt.startswith("\"\\\"\""):
+        return stmt[1:-1]
     return eval(stmt)
 
 
@@ -303,17 +309,19 @@ def run(code: str, functions: dict={}, vars: dict={}):
             index += 1
             if conditions:
                 if "return" in code[index][1:-1]:
-                    returnval, functions_, vars = run(code[index][1:-1], functions, vars)
+                    returnval, functions_, vars, returned = run(code[index][1:-1], functions, vars)
+                    return returnval, functions, vars, 1
                 else:
-                    returnval_, functions_, vars = run(code[index][1:-1], functions, vars)
+                    returnval_, functions_, vars, returned = run(code[index][1:-1], functions, vars)
             #index += 1
         elif code[index] == "else":
             index += 1
             if not condeval:
                 if "return" in code[index][1:-1]:
-                    returnval, functions_, vars = run(code[index][1:-1], functions, vars)
+                    returnval, functions_, vars, returned = run(code[index][1:-1], functions, vars)
+                    return returnval, functions, vars, 1
                 else:
-                    returnval_, functions_, vars = run(code[index][1:-1], functions, vars)
+                    returnval_, functions_, vars, returned = run(code[index][1:-1], functions, vars)
         elif code[index] == "while":
             index += 1
             conditions = code[index]
@@ -323,7 +331,8 @@ def run(code: str, functions: dict={}, vars: dict={}):
             index += 1
             condtitions = eval_vars(functions, conditions, vars)
             while condtitions:
-                returnval, functions_, vars = run(code[index][1:-1], functions, vars)
+                returnval, functions_, vars, returned = run(code[index][1:-1], functions, vars)
+                if returned: return returnval, functions, vars, 1
                 condtitions = eval_vars(functions, conditions, vars)
             index += 1
         elif code[index] == "using":
@@ -333,18 +342,18 @@ def run(code: str, functions: dict={}, vars: dict={}):
             filepath = filepath[1:-1]
             with open(filepath) as file:
                 data = file.read()
-            _, functions1, vars1 = run(data)
+            _, functions1, vars1, returned = run(data)
+            if returned: return returnval, functions, vars, 1
             functions.update(functions1)
             vars.update(vars1)
             index += 1
         elif code[index] == "execp":
             index += 1
-            expr, index = find_until(code, index, ";")
-            expr = parseExpr(functions, expr[0], wrap_strings_recursively(vars))[1:-1]  # Fix parsing and execution
-            #print(expr)
-            debug(expr[1:-1])
-            #print(expr[1:-1])
-            exec(expr)
+            expr = ""
+            while code[index] != ";":
+                expr += code[index]
+                index += 1
+            exec(eval_vars(functions, expr, vars))
         elif code[index] == "var":
             index += 1
             var_name = code[index]
@@ -395,7 +404,7 @@ def run(code: str, functions: dict={}, vars: dict={}):
         elif code[index] == "return":
             index += 1
             expr, index = find_until(code, index, ";")
-            return eval_vars(functions, "".join(expr), vars), functions, vars
+            return eval_vars(functions, "".join(expr), vars), functions, vars, 1
         elif code[index] == "for":
             index += 1
             con = code[index]
@@ -407,7 +416,8 @@ def run(code: str, functions: dict={}, vars: dict={}):
             for i in iterable:
                 update_vars = vars
                 update_vars.update({mvar: i})
-                r, functions, vars = run(code[index], functions, vars)
+                r, functions, vars, returned = run(code[index], functions, vars)
+                if returned: return returnval, functions, vars, 1
                 vars.pop(mvar, "")    
             index += 1
         elif code[index] == "try":
@@ -416,20 +426,24 @@ def run(code: str, functions: dict={}, vars: dict={}):
             index += 1
             ex = 0
             try:
-                returnval_, functions, vars = run(code[index][1:-1], functions, vars)
+                returnval_, functions, vars, returned = run(code[index][1:-1], functions, vars)
+                if returned: return returnval, functions, vars, 1
             except:
                 ex = 1
                 vars = varsnapshot
                 functions = functionsnapshot
                 index += 2
-                returnval_, functions, vars = run(code[index][1:-1], functions, vars)
+                returnval_, functions, vars, returned = run(code[index][1:-1], functions, vars)
+                if returned: return returnval, functions, vars, 1
             index += 1
             if ex == 0:
                 index += 1
         debug(vars)
         index += 1
     #print(vars)
-    return returnval, functions, vars
-def main(content):
+    return returnval, functions, vars, 0
+def main(content, args):
     run(content)
+import sys
+main(open(sys.argv[1]).read(), [])
 #print(eval_vars({'print': ({'a': ('required', '')}, '{    execp("print("a")");}'), 'input': ({'c': ('required', '')}, '{    var d = evalp("input(\\"c\\")");    return d;}'), 'pow': ({'a': ('required', ''), 'b': ('required', '')}, '{    var c = a ** b;    return c;}'), 'mod': ({'a': ('required', ''), 'b': ('required', '')}, '{    var c = a % b;    return c;}'), 'abs': ({'n': ('required', '')}, '{    if (n >= 0) {        return n;    }    if (n < 0) {        n -= n;        n -= n;        return n;    }}'), 'sqrt': ({'n': ('required', '')}, '{    return pow(n, 0.5);}'), 'min': ({'a': ('required', ''), 'b': ('required', '')}, '{    if (a < b) {        return a;    }    return b;}'), 'max': ({'a': ('required', ''), 'b': ('required', '')}, '{    if (a < b) {        return b;    }    return a;}'), 'floor': ({'n': ('required', '')}, '{    if (mod(n, 1) == 0) {        return n;    }    return n - mod(n, 1);}'), 'ceil': ({'n': ('required', '')}, '{    if (mod(n, 1) == 0) {        return n;    }    return n + 1 - mod(n, 1);}'), 'round': ({'n': ('required', '')}, '{    var decimalPart = mod(n, 1);    if (decimalPart >= 0.5) {        return ceil(n);    }    return floor(n);}'), 'sign': ({'n': ('required', '')}, '{    if (n > 0) {        return 1;    }    if (n < 0) {        return -1;    }    return 0;}'), 'exp': ({'n': ('required', '')}, '{    return pow(E, n);}'), 'log': ({'n': ('required', '')}, '{    var result = 0;    var approx = n - 1;    while (approx > 0) {        approx = approx / E;        result += 1;    }    return result;}'), 'fact': ({'n': ('required', '')}, '{    if (n == 0) {        return 1;    }    if (n > 0) {        var b = fact(n - 1);        b *= n;        return b;    }}'), 'gcd': ({'a': ('required', ''), 'b': ('required', '')}, '{    while (b != 0) {        var temp = b;        b = mod(a, b);        a = temp;    }    return a;'), 'g': ({'a': ('required', ''), 'b': ('required', '')}, '{    if (a < b) {        return "1";    }    return "2";}')}, "(a < b)", {"a": 1, "b": 2}))

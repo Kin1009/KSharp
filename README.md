@@ -1,6 +1,11 @@
 # K#
 K# is a programming language syntacically similar to V# or C# or C++ or python or etc, but with some additions
 WARNING: .ks interferes with KerboScript, so either choose K# or Kerbo if you installed it
+# Version symbols
+- f: Failed version
+- a, b, c and d: Subversions, usually added in the same day
+- t: Testing
+- w: Weird, need more testing
 # Changelog
 - Version 0.0.2: Function calls
 - Version 1.0.0: yea i skipped but uhh basics are complete
@@ -12,6 +17,9 @@ WARNING: .ks interferes with KerboScript, so either choose K# or Kerbo if you in
 - Version 1.2.6: Added 'for' kw, added range() (on "modules/test.ks")
 - Version 1.2.7: Added slicing (a[1:4])
 - Version 1.2.8f: Failed, but added compiler
+- Version 1.2.9wa: Added C# port (not working)
+- Version 1.2.9wb: Added working IO, but under specific circumstances
+
 # TODO
 1. Add REPL
 2. Handling errors
