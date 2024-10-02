@@ -5,7 +5,6 @@ WARNING: .ks interferes with KerboScript, so either choose K# or Kerbo if you in
 - f: Failed version
 - a, b, c and d: Subversions, usually added in the same day
 - t: Testing
-- w: Weird, need more testing
 # Changelog
 - Version 0.0.2: Function calls
 - Version 1.0.0: yea i skipped but uhh basics are complete
@@ -17,8 +16,8 @@ WARNING: .ks interferes with KerboScript, so either choose K# or Kerbo if you in
 - Version 1.2.6: Added 'for' kw, added range() (on "modules/test.ks")
 - Version 1.2.7: Added slicing (a[1:4])
 - Version 1.2.8f: Failed, but added compiler
-- Version 1.2.9wa: Added C# port (not working)
-- Version 1.2.9wb: Added working IO, but under specific 
+- Version 1.2.9fa: Added C# port (not working)
+- Version 1.2.9tb: Added working IO, but under specific 
 circumstances
 - Version 1.3.0ta: Way for input:
 if using the builtin "io" package, put ' on start and end of answer.
