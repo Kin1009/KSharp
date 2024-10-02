@@ -340,7 +340,7 @@ def run(code: str, functions: dict={}, vars: dict={}):
             data = ""
             filepath = code[index]
             filepath = filepath[1:-1]
-            with open(filepath) as file:
+            with open(filepath + ".kshp") as file:
                 data = file.read()
             _, functions1, vars1, returned = run(data)
             if returned: return returnval, functions, vars, 1

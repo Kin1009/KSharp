@@ -5,6 +5,6 @@ func print(z) {
     execp "print('z', end='')";
 }
 func input(c) {
-    var d = "\"" + evalp(input('c')) + "\"";
+    var d = "\"" + evalp(input('c' + ' (Please put quotes on your answer.) > ')) + "\"";
     return d;
 }

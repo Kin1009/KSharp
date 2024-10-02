@@ -18,8 +18,17 @@ WARNING: .ks interferes with KerboScript, so either choose K# or Kerbo if you in
 - Version 1.2.7: Added slicing (a[1:4])
 - Version 1.2.8f: Failed, but added compiler
 - Version 1.2.9wa: Added C# port (not working)
-- Version 1.2.9wb: Added working IO, but under specific circumstances
-
+- Version 1.2.9wb: Added working IO, but under specific 
+circumstances
+- Version 1.3.0ta: Way for input:
+if using the builtin "io" package, put ' on start and end of answer.
+Example: 'a';
+- Version 1.3.0tb: To represent a string in K# we use 'varname' or "mystring" directly. (we only use ", ' is for another purpose idk)
+Example: 
+'mystring'
+"Hello, world!';
+- Version 1.3.0tc: Changed fileextension to .kshp
+- Version 1.3.0td: "using" keywords now take no fileextension (uses .kshp default)
 # TODO
 1. Add REPL
 2. Handling errors
@@ -27,7 +36,6 @@ WARNING: .ks interferes with KerboScript, so either choose K# or Kerbo if you in
 4. add installer
     - find eval() in exe, completely usable python code
 5. Add classes
-6. Better modules
 <br/>
 <br/>
 <br/>
