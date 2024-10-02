@@ -1,6 +1,6 @@
 # K#
 K# is a programming language syntacically similar to V# or C# or C++ or python or etc, but with some additions
-WARNING: .ks interferes with KerboScript, so either choose K# or Kerbo if you installed it
+
 # Version symbols
 - f: Failed version
 - a, b, c and d: Subversions, usually added in the same day
