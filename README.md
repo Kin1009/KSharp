@@ -3,7 +3,7 @@ K# is a programming language syntacically similar to V# or C# or C++ or python o
 
 # Version symbols
 - f: Failed version
-- a, b, c and d: Subversions, usually added in the same day
+- a, b, c and d, e: Subversions, usually added in the same day
 - t: Testing
 # Changelog
 - Version 0.0.2: Function calls
@@ -28,6 +28,7 @@ Example:
 "Hello, world!';
 - Version 1.3.0tc: Changed fileextension to .kshp
 - Version 1.3.0td: "using" keywords now take no fileextension (uses .kshp default)
+- Version 1.3.0te: Somehow K# can call builtin functions
 # TODO
 1. Add REPL
 2. Handling errors
