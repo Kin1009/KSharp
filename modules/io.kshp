@@ -1,10 +1,16 @@
 func println(z) {
-    print('z');
+    execp "print(z)";
+}
+func printlns(z) {
+    execp "print('z')";
 }
 func print(z) {
+    execp "print(z, end='')";
+}
+func prints(z) {
     execp "print('z', end='')";
 }
 func input(c) {
-    var d = "\"" + evalp(input('c' + ' (Please put quotes on your answer.) > ')) + "\"";
-    return d;
+    var d = evalp(input('c' + " > "));
+    return 'd';
 }

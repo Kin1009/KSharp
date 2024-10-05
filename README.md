@@ -29,65 +29,16 @@ Example:
 - Version 1.3.0tc: Changed fileextension to .kshp
 - Version 1.3.0td: "using" keywords now take no fileextension (uses .kshp default)
 - Version 1.3.0te: Somehow K# can call builtin functions
+- Version 1.3.1a: Real IO, input() now will be string, some basic list functions
+- Version 1.3.1b: Added keywords: define, jump, label
+Example:
+using "modules/io";
+define 1 2; # 1 -> 2
+println(1 + 2); # 4
+label mylabel;
+...
+jump mylabel;
 # TODO
 1. Add REPL
 2. Handling errors
-3. try catch
-4. add installer
-    - find eval() in exe, completely usable python code
-5. Add classes
-<br/>
-<br/>
-<br/>
-<br/>
-<br/>
-<br/>
-<br/>
-<br/>
-<br/>
-<br/>
-<br/>
-<br/>
-<br/>
-<br/>
-<br/>
-<br/>
-<br/>
-<br/>
-<br/>
-<br/>
-<br/>
-<br/>
-<br/>
-<br/>
-<br/>
-
-@Funcieq if ur reading this stop now
-
-<br/>
-<br/>
-<br/>
-<br/>
-<br/>
-<br/>
-<br/>
-<br/>
-<br/>
-<br/>
-<br/>
-<br/>
-<br/>
-<br/>
-<br/>
-<br/>
-<br/>
-<br/>
-<br/>
-<br/>
-<br/>
-<br/>
-<br/>
-<br/>
-<br/>
-
-theres nothing
+3. Add classes

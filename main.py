@@ -139,7 +139,8 @@ def run_function(functions, function_name, args: str, vars):
     func_name = function_name
     #print(args)
     args = args[1:-1]
-    args += ","
+    if args != "": 
+        args += ","
     args = "(" + args + ")"
     args = eval_vars(functions, args, vars)  # Evaluate the arguments
     #print(args)
@@ -157,10 +158,14 @@ def detect_and_replace_functions(functions: dict, code: str, vars: dict):
     index = 0
     replace = ""
     while index < len(code):
-        if code[index][0] in "[({":
-            a = detect_and_replace_functions_args(functions, code[index], vars)
-            code[index] = a
-        elif code[index] in vars:
+        try:
+            if code[index][0] in "[({":
+                if code[index] not in ["()", "[]", "{}"]:
+                    a = detect_and_replace_functions_args(functions, code[index], vars)
+                    code[index] = a
+        except:
+            pass
+        if code[index] in vars:
             index += 1
             if code[index][0] == "[":
                 range_ = code[index]
@@ -232,8 +237,8 @@ def eval_vars(functions: dict, stmt: str, vars: dict):
     stmt = parseExpr(functions, stmt, vars)
     debug(stmt)
     #print(stmt)
-    if stmt.startswith("\"") and not stmt.startswith("\"\\\"\""):
-        return stmt[1:-1]
+    if stmt.startswith("\"") or stmt.startswith("'"):
+        return stmt
     return eval(stmt)
 
 
@@ -289,6 +294,7 @@ def run(code: str, functions: dict={}, vars: dict={}):
     code = split(code)
     index = 0
     condeval = False
+    jumps = {}
     while index < len(code):
         if code[index] == "func":
             index += 1
@@ -349,11 +355,11 @@ def run(code: str, functions: dict={}, vars: dict={}):
             index += 1
         elif code[index] == "execp":
             index += 1
-            expr = ""
-            while code[index] != ";":
-                expr += code[index]
-                index += 1
-            exec(eval_vars(functions, expr, vars))
+            expr = code[index]
+            expr = expr.strip("\"")
+            for i in vars:
+                expr = expr.replace(i, str(vars[i]))
+            exec(expr)
         elif code[index] == "var":
             index += 1
             var_name = code[index]
@@ -405,6 +411,24 @@ def run(code: str, functions: dict={}, vars: dict={}):
             index += 1
             expr, index = find_until(code, index, ";")
             return eval_vars(functions, "".join(expr), vars), functions, vars, 1
+        elif code[index] == "define":
+            index += 1
+            replace = code[index].strip("\"")
+            index += 1
+            change = code[index].strip("\"")
+            code = " ".join(code)
+            code = code.replace("define" + replace + change, "")
+            code = code.replace(replace, change)
+            code = split(code)
+        elif code[index] == "label":
+            index += 1
+            name = code[index]
+            jumps[name] = index
+        elif code[index] == "jump":
+            index += 1
+            name = code[index]
+            #print(jumps)
+            index = jumps[name]
         elif code[index] == "for":
             index += 1
             con = code[index]

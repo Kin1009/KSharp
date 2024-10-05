@@ -1,5 +1,6 @@
-using "modules/test";
 using "modules/io";
-var b = input("Hello, world! From pythonprogram.");
-# println('b');
-println('b');
+using "modules/list";
+func a(i) {
+    a(1);
+}
+a(1);
