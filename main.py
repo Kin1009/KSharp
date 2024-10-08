@@ -195,20 +195,16 @@ def detect_and_replace_functions(functions: dict, code: str, vars: dict):
             code = code.replace(replace, str(value))
             debug("replace3", code)
             code = split(code)
-        elif code[index] == "evalp":
-            index += 1
-            args = code[index]
-            replace = "evalp" + args
-            #print(args)
-            value = eval(args[1:-1])
-            #if type(value) == str:
-            #    value = f"repr(\'{value}\')"
-            if type(value) != str:
-                code = "".join(code).replace(replace, str(value))
-            else:
-                code = "".join(code).replace(replace, "\"" + value  + "\"")
-            code = split(code)
-            index += 1
+        #elif code[index] == "println":
+        #    index += 1
+        #    args = code[index]
+        #    replace = "println" + args
+        #    #print(args)
+        #    value = eval(args[1:-1])
+        #    print(value)
+        #    code = "".join(code).replace(replace, "None")
+        #    code = split(code)
+        #    index += 1
         index += 1
     if isinstance(code, list):
         code = "".join(code)
@@ -253,13 +249,13 @@ def wrap_strings_recursively(data):
         # If it's neither a string nor a list, return it as is
         return data
 
-def merge_dict_with_list(struct, values):
+def merge_dict_with_list(struct=dict, values=dict):
     # Prepare the output dictionary
     result = {}
-    
+    if "" in struct:
+        del struct['']
     # Extract required fields
     required_fields = [key for key, (status, _) in struct.items() if status == "required"]
-
     # Check if there are enough values for required fields
     if len(values) < len(required_fields):
         raise ValueError("Error: Not enough args for required fields")
@@ -287,7 +283,8 @@ def find_until(tokens, index, end_token):
         result.append(tokens[index])
         index += 1
     return result, index
-def run(code: str, functions: dict={}, vars: dict={}):
+import math
+def run(code: str, functions: dict={}, vars: dict={"PI": math.pi, "E": math.e}):
     # Remove the outermost curly braces and split the code
     code = code.strip("{}")
     returnval = None
@@ -336,9 +333,28 @@ def run(code: str, functions: dict={}, vars: dict={}):
             conditions.replace("!", " not ")  
             index += 1
             condtitions = eval_vars(functions, conditions, vars)
-            while condtitions:
+            r = 1
+            while condtitions and r:
                 returnval, functions_, vars, returned = run(code[index][1:-1], functions, vars)
-                if returned: return returnval, functions, vars, 1
+                if returned == 1: return returnval, functions, vars, 1
+                if returned == 2:
+                    r = 0
+                condtitions = eval_vars(functions, conditions, vars)
+            index += 1
+        elif code[index] == "until":
+            index += 1
+            conditions = code[index]
+            conditions.replace("||", " or ")
+            conditions.replace("&&", " and ")
+            conditions.replace("!", " not ")  
+            index += 1
+            condtitions = eval_vars(functions, conditions, vars)
+            r = 1
+            while not condtitions and r:
+                returnval, functions_, vars, returned = run(code[index][1:-1], functions, vars)
+                if returned == 1: return returnval, functions, vars, 1
+                if returned == 2:
+                    r = 0
                 condtitions = eval_vars(functions, conditions, vars)
             index += 1
         elif code[index] == "using":
@@ -349,7 +365,7 @@ def run(code: str, functions: dict={}, vars: dict={}):
             with open(filepath + ".kshp") as file:
                 data = file.read()
             _, functions1, vars1, returned = run(data)
-            if returned: return returnval, functions, vars, 1
+            if returned == 1: return returnval, functions, vars, 1
             functions.update(functions1)
             vars.update(vars1)
             index += 1
@@ -368,6 +384,18 @@ def run(code: str, functions: dict={}, vars: dict={}):
             a = eval_vars(functions, "".join(expr), vars)
             debug("var", a, type(a))
             vars[var_name] = a
+        elif code[index] == "println":
+            index += 1
+            expr = code[index]
+            expr = eval_vars(functions, expr, vars)
+            print(expr)
+            index += 1
+        elif code[index] == "print":
+            index += 1
+            expr = code[index]
+            expr = eval_vars(functions, expr, vars)
+            print(expr, end="")
+            index += 1
         elif code[index] in vars:
             var_name = code[index]
             index += 1
@@ -376,7 +404,8 @@ def run(code: str, functions: dict={}, vars: dict={}):
             expr, index = find_until(code, index, ";")
             vars.update({"this": vars[var_name]})
             #print(expr)
-            expr = eval_vars(functions, "".join(expr), vars)
+            if expr != "":
+                expr = eval_vars(functions, "".join(expr), vars)
             
             if op == "+=":
                 vars[var_name] += expr
@@ -404,13 +433,41 @@ def run(code: str, functions: dict={}, vars: dict={}):
                 vars[var_name] <<= expr
             elif op == "=":
                 vars[var_name] = expr
+            elif op == "append":
+                vars[var_name].append(expr)
+            elif op == "extend":
+                vars[var_name].extend(expr)
+            elif op == "remove":
+                vars[var_name].remove(expr)
+            elif op == "sort":
+                vars[var_name].sort()
+            elif op == "reverse":
+                vars[var_name].reverse()
+            elif op == "insert":
+                vars[var_name].insert(expr[0], expr[1])
+            elif op == "clear":
+                vars[var_name].clear()
+            elif op == "add":
+                vars[var_name].add(expr)
+            elif op == "update":
+                vars[var_name].update(expr)
+            elif op == "discard":
+                vars[var_name].discard(expr)
+            elif op == "intersection_update":
+                vars[var_name].intersection_update(expr)
         elif code[index] in functions:
             #print(code[index], code[index + 1], vars)
             run_function(functions, code[index], code[index + 1], vars)
         elif code[index] == "return":
             index += 1
-            expr, index = find_until(code, index, ";")
-            return eval_vars(functions, "".join(expr), vars), functions, vars, 1
+            if code[index] != ";":
+                expr, index = find_until(code, index, ";")
+                return eval_vars(functions, "".join(expr), vars), functions, vars, 1
+            else:
+                return None, functions, vars, 1
+        elif code[index] == "break":
+            index += 1
+            return None, functions, vars, 2
         elif code[index] == "define":
             index += 1
             replace = code[index].strip("\"")
@@ -441,7 +498,8 @@ def run(code: str, functions: dict={}, vars: dict={}):
                 update_vars = vars
                 update_vars.update({mvar: i})
                 r, functions, vars, returned = run(code[index], functions, vars)
-                if returned: return returnval, functions, vars, 1
+                if returned == 1: return returnval, functions, vars, 1
+                if returned == 2: return returnval, functions, vars, 0
                 vars.pop(mvar, "")    
             index += 1
         elif code[index] == "try":
@@ -451,14 +509,14 @@ def run(code: str, functions: dict={}, vars: dict={}):
             ex = 0
             try:
                 returnval_, functions, vars, returned = run(code[index][1:-1], functions, vars)
-                if returned: return returnval, functions, vars, 1
+                if returned == 1: return returnval, functions, vars, 1
             except:
                 ex = 1
                 vars = varsnapshot
                 functions = functionsnapshot
                 index += 2
                 returnval_, functions, vars, returned = run(code[index][1:-1], functions, vars)
-                if returned: return returnval, functions, vars, 1
+                if returned == 1: return returnval, functions, vars, 1
             index += 1
             if ex == 0:
                 index += 1
@@ -469,5 +527,15 @@ def run(code: str, functions: dict={}, vars: dict={}):
 def main(content, args):
     run(content)
 import sys
+import math
+import random
+import time
+import datetime
+import os
+import json
+import requests
+import re
+import collections
+import csv
 main(open(sys.argv[1]).read(), [])
 #print(eval_vars({'print': ({'a': ('required', '')}, '{    execp("print("a")");}'), 'input': ({'c': ('required', '')}, '{    var d = evalp("input(\\"c\\")");    return d;}'), 'pow': ({'a': ('required', ''), 'b': ('required', '')}, '{    var c = a ** b;    return c;}'), 'mod': ({'a': ('required', ''), 'b': ('required', '')}, '{    var c = a % b;    return c;}'), 'abs': ({'n': ('required', '')}, '{    if (n >= 0) {        return n;    }    if (n < 0) {        n -= n;        n -= n;        return n;    }}'), 'sqrt': ({'n': ('required', '')}, '{    return pow(n, 0.5);}'), 'min': ({'a': ('required', ''), 'b': ('required', '')}, '{    if (a < b) {        return a;    }    return b;}'), 'max': ({'a': ('required', ''), 'b': ('required', '')}, '{    if (a < b) {        return b;    }    return a;}'), 'floor': ({'n': ('required', '')}, '{    if (mod(n, 1) == 0) {        return n;    }    return n - mod(n, 1);}'), 'ceil': ({'n': ('required', '')}, '{    if (mod(n, 1) == 0) {        return n;    }    return n + 1 - mod(n, 1);}'), 'round': ({'n': ('required', '')}, '{    var decimalPart = mod(n, 1);    if (decimalPart >= 0.5) {        return ceil(n);    }    return floor(n);}'), 'sign': ({'n': ('required', '')}, '{    if (n > 0) {        return 1;    }    if (n < 0) {        return -1;    }    return 0;}'), 'exp': ({'n': ('required', '')}, '{    return pow(E, n);}'), 'log': ({'n': ('required', '')}, '{    var result = 0;    var approx = n - 1;    while (approx > 0) {        approx = approx / E;        result += 1;    }    return result;}'), 'fact': ({'n': ('required', '')}, '{    if (n == 0) {        return 1;    }    if (n > 0) {        var b = fact(n - 1);        b *= n;        return b;    }}'), 'gcd': ({'a': ('required', ''), 'b': ('required', '')}, '{    while (b != 0) {        var temp = b;        b = mod(a, b);        a = temp;    }    return a;'), 'g': ({'a': ('required', ''), 'b': ('required', '')}, '{    if (a < b) {        return "1";    }    return "2";}')}, "(a < b)", {"a": 1, "b": 2}))

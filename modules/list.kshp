@@ -1,8 +1,0 @@
-func append(item) {
-    this += [item];
-    return this;
-}
-func pop(idx=-1) {
-    var b = evalp((my_list := this, popped_item := my_list.pop(idx)));
-    return b;
-}

@@ -38,6 +38,9 @@ println(1 + 2); # 4
 label mylabel;
 ...
 jump mylabel;
+- Version 1.3.2a: Removed evalp and added type functions
+- Version 1.3.2b: Also I realized I can use python modules so uhhhh no more builtin modules just diy ones
+- Version 1.3.2c: That kinda defeats the purpose of K#
 # TODO
 1. Add REPL
 2. Handling errors
