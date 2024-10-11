@@ -43,6 +43,5 @@ jump mylabel;
 - Version 1.3.2c: That kinda defeats the purpose of K#
 - Version 1.3.3: Alias to 1.3.2, added installer
 # TODO
-1. Add REPL
-2. Handling errors
-3. Add classes
+1. Handling errors
+2. Add classes

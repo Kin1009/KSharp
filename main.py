@@ -486,6 +486,8 @@ def run(code: str, functions: dict={}, vars: dict={"PI": math.pi, "E": math.e}):
             name = code[index]
             #print(jumps)
             index = jumps[name]
+        elif code[index] == "exit":
+            sys.exit()
         elif code[index] == "for":
             index += 1
             con = code[index]
@@ -524,8 +526,6 @@ def run(code: str, functions: dict={}, vars: dict={"PI": math.pi, "E": math.e}):
         index += 1
     #print(vars)
     return returnval, functions, vars, 0
-def main(content, args):
-    run(content)
 import sys
 import math
 import random
@@ -537,5 +537,41 @@ import requests
 import re
 import collections
 import csv
-main(open(sys.argv[1]).read(), [])
-#print(eval_vars({'print': ({'a': ('required', '')}, '{    execp("print("a")");}'), 'input': ({'c': ('required', '')}, '{    var d = evalp("input(\\"c\\")");    return d;}'), 'pow': ({'a': ('required', ''), 'b': ('required', '')}, '{    var c = a ** b;    return c;}'), 'mod': ({'a': ('required', ''), 'b': ('required', '')}, '{    var c = a % b;    return c;}'), 'abs': ({'n': ('required', '')}, '{    if (n >= 0) {        return n;    }    if (n < 0) {        n -= n;        n -= n;        return n;    }}'), 'sqrt': ({'n': ('required', '')}, '{    return pow(n, 0.5);}'), 'min': ({'a': ('required', ''), 'b': ('required', '')}, '{    if (a < b) {        return a;    }    return b;}'), 'max': ({'a': ('required', ''), 'b': ('required', '')}, '{    if (a < b) {        return b;    }    return a;}'), 'floor': ({'n': ('required', '')}, '{    if (mod(n, 1) == 0) {        return n;    }    return n - mod(n, 1);}'), 'ceil': ({'n': ('required', '')}, '{    if (mod(n, 1) == 0) {        return n;    }    return n + 1 - mod(n, 1);}'), 'round': ({'n': ('required', '')}, '{    var decimalPart = mod(n, 1);    if (decimalPart >= 0.5) {        return ceil(n);    }    return floor(n);}'), 'sign': ({'n': ('required', '')}, '{    if (n > 0) {        return 1;    }    if (n < 0) {        return -1;    }    return 0;}'), 'exp': ({'n': ('required', '')}, '{    return pow(E, n);}'), 'log': ({'n': ('required', '')}, '{    var result = 0;    var approx = n - 1;    while (approx > 0) {        approx = approx / E;        result += 1;    }    return result;}'), 'fact': ({'n': ('required', '')}, '{    if (n == 0) {        return 1;    }    if (n > 0) {        var b = fact(n - 1);        b *= n;        return b;    }}'), 'gcd': ({'a': ('required', ''), 'b': ('required', '')}, '{    while (b != 0) {        var temp = b;        b = mod(a, b);        a = temp;    }    return a;'), 'g': ({'a': ('required', ''), 'b': ('required', '')}, '{    if (a < b) {        return "1";    }    return "2";}')}, "(a < b)", {"a": 1, "b": 2}))
+if len(sys.argv) == 2:
+    run(open(sys.argv[1]).read())
+    sys.exit()
+print("K# IDLE version 1.3.2")
+print("Type \"help\" to get help.")
+code = ""
+while True:
+    inp = input(">>> ")
+    if inp == "help":
+        print("""K# help:
+while (a) {...}    a while loop
+until (a) {...}    an until loop (while (!a))
+if (a) {...}       an if statement
+else {...}         if (!a)
+using "path"       import a module
+var a = ...        a = ...
+a <tfunc> b        type function (all functions return None in py!)
+print('a')         print a variable (string)
+'a'                ref a var thats a string
+print(a)           prints a variable not a string
+a                  ref a var not a string
+print("a")         print a string literal
+"a"                string literal
+And more
+
+IDLE help:
+exit               exit
+run                run program
+clear              clear program data""")
+    elif inp == "exit":
+        exit()
+    elif inp == "run":
+        run(code)
+        print()
+    elif inp == "clear":
+        code = ""
+    else:
+        code += inp + "\n"
