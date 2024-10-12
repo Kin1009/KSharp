@@ -74,7 +74,7 @@ def split(text):
                     res.append(a)  # Add the previous token before the container
                 a = i
                 layer += 1
-            elif i in string.ascii_letters + string.digits:  # Handle alphanumeric (strings)
+            elif i in string.ascii_letters + string.digits + "_:.":  # Handle alphanumeric (strings)
                 if type_ == "str":
                     a += i
                 else:
@@ -82,7 +82,7 @@ def split(text):
                         res.append(a)
                     a = i
                     type_ = "str"
-            elif i in r"""!#$%&()*+,-./:;<=>?@[\]^_`{|}~""" and i not in openm:  # Handle punctuation
+            elif i in r"""!#$%&()*+,-/;<=>?@[\]^`{|}~""" and i not in openm:  # Handle punctuation
                 if type_ == "punc":
                     a += i
                 else:
@@ -195,16 +195,6 @@ def detect_and_replace_functions(functions: dict, code: str, vars: dict):
             code = code.replace(replace, str(value))
             debug("replace3", code)
             code = split(code)
-        #elif code[index] == "println":
-        #    index += 1
-        #    args = code[index]
-        #    replace = "println" + args
-        #    #print(args)
-        #    value = eval(args[1:-1])
-        #    print(value)
-        #    code = "".join(code).replace(replace, "None")
-        #    code = split(code)
-        #    index += 1
         index += 1
     if isinstance(code, list):
         code = "".join(code)
@@ -234,7 +224,7 @@ def eval_vars(functions: dict, stmt: str, vars: dict):
     debug(stmt)
     #print(stmt)
     if stmt.startswith("\"") or stmt.startswith("'"):
-        return stmt
+        print("str")
     return eval(stmt)
 
 
@@ -536,6 +526,7 @@ import json
 import requests
 import re
 import collections
+import tkinter as tk
 import csv
 if len(sys.argv) == 2:
     run(open(sys.argv[1]).read())

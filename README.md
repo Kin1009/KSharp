@@ -42,6 +42,7 @@ jump mylabel;
 - Version 1.3.2b: Also I realized I can use python modules so uhhhh no more builtin modules just diy ones
 - Version 1.3.2c: That kinda defeats the purpose of K#
 - Version 1.3.3: Alias to 1.3.2, added installer
-# TODO
+- Version 1.3.4: Added GUI support (tkinter), python styled syntax
+# To do
 1. Handling errors
 2. Add classes
