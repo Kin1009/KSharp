@@ -1,1 +1,18 @@
-execp "a = tk.Tk(); tk.Button(a, text='Hellow').grid(column=0, row=0); a.mainloop()";
+func add(x, y) {
+    return x + y;
+}
+func subtract(x, y) {
+    return x - y;
+}
+func multiply(x, y) {
+    return x * y;
+}
+func divide(x, y) {
+    return x / y;
+}
+var num1 = float(input("Enter first number: "));
+var num2 = float(input("Enter second number: "));
+println("+: " + str(add(num1, num2)));
+println("-: " + str(subtract(num1, num2)));
+println("*: " + str(multiply(num1, num2)));
+println("/: " + str(divide(num1, num2)));

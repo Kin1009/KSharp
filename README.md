@@ -1,6 +1,6 @@
 # K#
 K# is a programming language syntacically similar to V# or C# or C++ or python or etc, but with some additions
-
+NOTE: The file size is too big so Drive for this: https://drive.google.com/drive/folders/1ygNvL3y44Y0gZpFXp1G6X8_xtMitlw91?usp=sharing
 # Version symbols
 - f: Failed version
 - a, b, c and d, e: Subversions, usually added in the same day
@@ -31,6 +31,9 @@ Example:
 - Version 1.3.0te: Somehow K# can call builtin functions
 - Version 1.3.1a: Real IO, input() now will be string, some basic list functions
 - Version 1.3.1b: Added keywords: define, jump, label
+- Version 1.3.4: Fixes
+- Version 1.3.5: More fixes, work on exceptions fail
+- Version 1.3.6: Way for string: if function: '' else none
 Example:
 using "modules/io";
 define 1 2; # 1 -> 2
@@ -43,6 +46,8 @@ jump mylabel;
 - Version 1.3.2c: That kinda defeats the purpose of K#
 - Version 1.3.3: Alias to 1.3.2, added installer
 - Version 1.3.4: Added GUI support (tkinter), python styled syntax
+- Version 1.3.5: Added "cmd" keyword
 # To do
 1. Handling errors
 2. Add classes
+3. Add package manager
