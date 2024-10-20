@@ -38,5 +38,22 @@ Example:
 - Version 1.3.4: Added GUI support (tkinter), python styled syntax
 - Version 1.3.5: Added "cmd" keyword
 - Version 1.3.7: Inheritable functions, modules have class-like structure
+- Version 1.3.8: Added classes (finally), added "self" kw
+Example for a class:
+myclass.kshp:
+```
+var a = 0;
+func cat() {
+    println(self.a);
+    self.a += 1;
+}
+```
+program.kshp:
+```
+class a = myclass;
+a.cat(); # 0
+a.cat(); # 1
+a.cat(); # 2
+```
 # To do
 1. Add package manager
