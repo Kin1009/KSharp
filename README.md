@@ -39,6 +39,7 @@ Example:
 - Version 1.3.5: Added "cmd" keyword
 - Version 1.3.7: Inheritable functions, modules have class-like structure
 - Version 1.3.8: Added classes (finally), added "self" kw
+- Version 1.3.9: Added package manager: ```main.exe pm user\repo```
 Example for a class:
 myclass.kshp:
 ```
