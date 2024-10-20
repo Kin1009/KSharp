@@ -31,23 +31,12 @@ Example:
 - Version 1.3.0te: Somehow K# can call builtin functions
 - Version 1.3.1a: Real IO, input() now will be string, some basic list functions
 - Version 1.3.1b: Added keywords: define, jump, label
-- Version 1.3.4: Fixes
-- Version 1.3.5: More fixes, work on exceptions fail
-- Version 1.3.6: Way for string: if function: '' else none
-Example:
-using "modules/io";
-define 1 2; # 1 -> 2
-println(1 + 2); # 4
-label mylabel;
-...
-jump mylabel;
 - Version 1.3.2a: Removed evalp and added type functions
 - Version 1.3.2b: Also I realized I can use python modules so uhhhh no more builtin modules just diy ones
 - Version 1.3.2c: That kinda defeats the purpose of K#
 - Version 1.3.3: Alias to 1.3.2, added installer
 - Version 1.3.4: Added GUI support (tkinter), python styled syntax
 - Version 1.3.5: Added "cmd" keyword
+- Version 1.3.7: Inheritable functions, modules have class-like structure
 # To do
-1. Handling errors
-2. Add classes
-3. Add package manager
+1. Add package manager
