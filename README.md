@@ -1,6 +1,9 @@
 # K#
 K# is a programming language syntacically similar to V# or C# or C++ or python or etc, but with some additions
+
 NOTE: The file size is too big so Drive for this: https://drive.google.com/drive/folders/1ygNvL3y44Y0gZpFXp1G6X8_xtMitlw91?usp=sharing
+
+All includable setup files will be placed here for convinence.
 # Version symbols
 - f: Failed version
 - a, b, c and d, e: Subversions, usually added in the same day
@@ -57,3 +60,28 @@ something.b(); # 1
 ```
 Version 1.4.1: Tkinter library support
 Version 1.4.2: Fixed IDE
+Version 1.4.3: Big update!
+1. Fixed some bugs in ```using```
+2. Added ctypes
+3. Added pointers (&myvar and *myid)
+Example:
+```
+func main(args) {
+    var a = 1;
+    var pointer = &myvar; # id()
+    var b = *pointer; # 1
+}
+```
+4. Also, default run code as ```main(args)```, to change, add ```entrypoint myfunc;```
+5. Added \s for space subsitute (my school computer had no spacebar)
+6. References:
+```
+func a(:ref_variable) {
+    :ref_variable += 1;
+}
+func main(args) {
+    var b = 1;
+    a(b);
+    print(b); # 2
+}
+```
