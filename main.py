@@ -4,15 +4,47 @@ import traceback
 import ctypes
 import warnings
 import copy
+from ctypes import c_char as char
+from ctypes import c_byte as cbyte
+from ctypes import c_ubyte as ubyte
+from ctypes import c_short as short
+from ctypes import c_ushort as ushort
+from ctypes import c_int as cint
+from ctypes import c_uint as uint
+from ctypes import c_long as long
+from ctypes import c_ulong as ulong
+from ctypes import c_longlong as longlong
+from ctypes import c_ulonglong as ulonglong
+from ctypes import c_float as cfloat
+from ctypes import c_double as double
+from ctypes import c_longdouble as longdouble
+from ctypes import c_void_p as void_p
+from ctypes import c_char_p as char_p
+from ctypes import c_wchar_p as wchar_p
+from ctypes import c_bool as cbool
+from ctypes import c_int8 as int8
+from ctypes import c_int16 as int16
+from ctypes import c_int32 as int32
+from ctypes import c_int64 as int64
+from ctypes import c_uint8 as uint8
+from ctypes import c_uint16 as uint16
+from ctypes import c_uint32 as uint32
+from ctypes import c_uint64 as uint64
+
 # Suppress all warnings
 warnings.filterwarnings("ignore")
 
 def open_as_module(path):
+    return open(getfile(path))
+def getfile(path):
     if os.path.exists(path):
-        return open(path)
-    os.makedirs(os.getenv('APPDATA') + "\\K#", exist_ok=True)
-    if os.path.exists(os.getenv('APPDATA') + "\\K#\\" + path):
-        return open(os.getenv('APPDATA') + "\\K#\\" + path)
+        return path
+    else:
+        os.makedirs(os.getenv('APPDATA') + "\\K#", exist_ok=True)
+        if os.path.exists(os.getenv('APPDATA') + "\\K#\\" + path):
+            return os.getenv('APPDATA') + "\\K#\\" + path
+        else:
+            raise FileNotFoundError("No file named " + path)
 def custom_trace(e: Exception):
     # Extract the traceback details
     tb_lines = traceback.format_exception(type(e), e, e.__traceback__)
@@ -156,31 +188,31 @@ def find_for(string, search):
         return -1
     else:
         return index
-def run_function(exec_vars, functions, function_name, args: str, vars, classes):
+def run_function(exec_vars, functions, function_name, args: str, vars, classes, cdll: dict):
     func_name = function_name
     #print(args)
     args = args[1:-1]
     if args != "": 
         args += ","
     args = "(" + args + ")"
-    args = eval_vars(exec_vars, functions, args, vars, classes)  # Evaluate the arguments
+    args = eval_vars(exec_vars, functions, args, vars, classes, cdll)  # Evaluate the arguments
     #print(args)
     funcdata = functions[func_name]
     req = funcdata[0]
     func_code = funcdata[1]
     merged_vars = merge_dict_with_list(req, args)
     merged_vars.update(vars)
-    returnval, a, b, returned, exec_vars, classes = run(exec_vars, func_code, functions, merged_vars, classes)
+    returnval, a, b, returned, exec_vars, classes, cdll = run(exec_vars, func_code, functions, merged_vars, classes)
     del merged_vars
     return returnval  # Fix to pass the merged variables
-def run_function_modify(exec_vars, functions, function_name, args: str, vars, classes):
+def run_function_modify(exec_vars, functions, function_name, args: str, vars, classes, cdll):
     func_name = function_name
     #print(args)
     args = args[1:-1]
     if args != "": 
         args += ","
     args = "(" + args + ")"
-    args = eval_vars(exec_vars, functions, args, vars, classes)  # Evaluate the arguments
+    args = eval_vars(exec_vars, functions, args, vars, classes, cdll)  # Evaluate the arguments
     #print(args)
     funcdata = functions[func_name]
     req = funcdata[0]
@@ -193,10 +225,10 @@ def run_function_modify(exec_vars, functions, function_name, args: str, vars, cl
             for j in vars:
                 if id(vars[j]) == ref_var:
                     func_code = func_code.replace(i, j)
-    returnval, a, b, returned, exec_vars, classes = run(exec_vars, func_code, functions, merged_vars, classes)
+    returnval, a, b, returned, exec_vars, classes, cdll = run(exec_vars, func_code, functions, merged_vars, classes)
     del merged_vars
     return returnval, a, b, returned, exec_vars, classes  # Fix to pass the merged variables
-def detect_and_replace_functions(exec_vars, functions: dict, code: str, vars: dict, classes: dict):
+def detect_and_replace_functions(exec_vars, functions: dict, code: str, vars: dict, classes: dict, cdll: dict):
     debug("code3", code)
     code = split(code)
     index = 0
@@ -205,7 +237,7 @@ def detect_and_replace_functions(exec_vars, functions: dict, code: str, vars: di
         try:
             if code[index][0] in "[({":
                 if code[index] not in ["()", "[]", "{}"]:
-                    a = detect_and_replace_functions_args(exec_vars, functions, code[index], vars, classes)
+                    a = detect_and_replace_functions_args(exec_vars, functions, code[index], vars, classes, cdll)
                     code[index] = a
         except:
             pass
@@ -259,12 +291,21 @@ def detect_and_replace_functions(exec_vars, functions: dict, code: str, vars: di
             name = code[index][1:-1]
             replace = "ftos(" + name + ")"
             function_data = functions[name][1][1:-1]
-            value = f"'_, functions, vars, __, exec_vars, classes = run(exec_vars, \"{function_data.replace("\"", "\\\"")}\", functions, vars, classes)'"
+            value = f"'_, functions, vars, __, exec_vars, classes, cdll = run(exec_vars, \"{function_data.replace("\"", "\\\"")}\", functions, vars, classes, cdll)'"
             code = "".join(code)
             debug("replace", replace)
             debug("replace2", str(value))
             code = code.replace(replace, str(value))
             debug("replace3", code)
+            code = split(code)
+        elif code[index].split(".")[0] in cdll:
+            name_ = code[index] + code[index + 1]
+            name = code[index].split(".")[0]
+            func_name = code[index].split(".")[1]
+            index += 1
+            replace = str(eval(f'cdll[\"{name}\"].{func_name}{eval_vars(exec_vars, functions, code[index], vars, classes, cdll)}'))
+            code = "".join(code)
+            code = code.replace(name_, replace)
             code = split(code)
         elif code[index] in vars:
             index += 1
@@ -272,8 +313,8 @@ def detect_and_replace_functions(exec_vars, functions: dict, code: str, vars: di
                 range_ = code[index]
                 range__ = range_[1:-1].split(":")
                 for i, j in enumerate(range_):
-                    range__[i] = int(eval_vars(exec_vars, functions, range_[i], vars, classes))
-                value = eval_vars(exec_vars, functions, code[index - 1], vars, classes)
+                    range__[i] = int(eval_vars(exec_vars, functions, range_[i], vars, classes, cdll))
+                value = eval_vars(exec_vars, functions, code[index - 1], vars, classes, cdll)
                 if len(range__) == 1:
                     value = value[range__[0]]
                 elif len(range__) == 2:
@@ -289,7 +330,7 @@ def detect_and_replace_functions(exec_vars, functions: dict, code: str, vars: di
             index += 1
             args = code[index]
             replace = func_name + args
-            value = run_function(exec_vars, functions, func_name, args, vars, classes)
+            value = run_function(exec_vars, functions, func_name, args, vars, classes, cdll)
             code = "".join(code)
             debug("replace", replace)
             debug("replace2", str(value))
@@ -301,27 +342,27 @@ def detect_and_replace_functions(exec_vars, functions: dict, code: str, vars: di
         code = "".join(code)
     debug("code4", code)
     return code
-def detect_and_replace_functions_args(exec_vars, functions, args, vars, classes):
+def detect_and_replace_functions_args(exec_vars, functions, args, vars, classes, cdll):
     a = ""
     if args.startswith("("):
-        a = "(" + detect_and_replace_functions(exec_vars, functions, args[1:-1], vars, classes) + ")"
+        a = "(" + detect_and_replace_functions(exec_vars, functions, args[1:-1], vars, classes, cdll) + ")"
     if args.startswith("["):
-        a = "[" + detect_and_replace_functions(exec_vars, functions, args[1:-1], vars, classes) + "]"
+        a = "[" + detect_and_replace_functions(exec_vars, functions, args[1:-1], vars, classes, cdll) + "]"
     if args.startswith("{"):
-        a = "{" + detect_and_replace_functions(exec_vars, functions, args[1:-1], vars, classes) + "}"
+        a = "{" + detect_and_replace_functions(exec_vars, functions, args[1:-1], vars, classes, cdll) + "}"
     #print(a)
     return a
-def parseExpr(exec_vars, functions: dict, code: str, vars: dict, classes: dict):
+def parseExpr(exec_vars, functions: dict, code: str, vars: dict, classes: dict, cdll: dict):
     #raise Exception()
     #debug("a" + code)
-    code = detect_and_replace_functions(exec_vars, functions, code, vars, classes)
+    code = detect_and_replace_functions(exec_vars, functions, code, vars, classes, cdll)
     for var in vars:
         # Using \b for word boundaries to match whole words only
         code = re.sub(rf'\b{re.escape(var)}\b', (str(vars[var]) if (type(vars[var]) != str) else ("\"" + vars[var] + "\"")), code)
     return code.replace("\\n", "\n")
 
-def eval_vars(exec_vars, functions: dict, stmt: str, vars: dict, classes: dict):
-    stmt = parseExpr(exec_vars, functions, stmt, vars, classes)
+def eval_vars(exec_vars, functions: dict, stmt: str, vars: dict, classes: dict, cdll: dict):
+    stmt = parseExpr(exec_vars, functions, stmt, vars, classes, cdll)
     debug(stmt)
     return eval(stmt)
 
@@ -372,7 +413,7 @@ def find_until(tokens, index, end_token):
         index += 1
     return result, index
 import math
-def run(exec_vars: dict = {}, code: str = "", functions: dict={}, vars: dict={"PI": math.pi, "E": math.e, "true": True, "false": False}, classes: dict = {}):
+def run(exec_vars: dict = {}, code: str = "", functions: dict={}, vars: dict={"PI": math.pi, "E": math.e, "true": True, "false": False}, classes: dict = {}, cdll: dict = {}):
     # Remove the outermost curly braces and split the code
     code = code.strip("{}")
     returnval = None
@@ -413,24 +454,24 @@ def run(exec_vars: dict = {}, code: str = "", functions: dict={}, vars: dict={"P
                 conditions = conditions.replace("||", " or ")
                 conditions = conditions.replace("&&", " and ")
                 conditions = conditions.replace("!", " not ") 
-                conditions = eval_vars(exec_vars, functions, conditions, vars, classes)
+                conditions = eval_vars(exec_vars, functions, conditions, vars, classes, cdll)
                 condeval = conditions
                 index += 1
                 if conditions:
                     if "return" in code[index][1:-1]:
-                        returnval, functions_, vars, returned, exec_vars, classes = run(exec_vars, code[index][1:-1], functions, vars, classes)
-                        return returnval, functions, vars, 1, exec_vars, classes
+                        returnval, functions_, vars, returned, exec_vars, classes, cdll = run(exec_vars, code[index][1:-1], functions, vars, classes, cdll)
+                        return returnval, functions, vars, 1, exec_vars, classes, cdll
                     else:
-                        returnval_, functions_, vars, returned, exec_vars, classes = run(exec_vars, code[index][1:-1], functions, vars, classes)
+                        returnval_, functions_, vars, returned, exec_vars, classes, cdll = run(exec_vars, code[index][1:-1], functions, vars, classes, cdll)
                 #index += 1
             elif code[index] == "else":
                 index += 1
                 if not condeval:
                     if "return" in code[index][1:-1]:
-                        returnval, functions_, vars, returned, exec_vars, classes = run(exec_vars, code[index][1:-1], functions, vars, classes)
-                        return returnval, functions, vars, 1, exec_vars, classes
+                        returnval, functions_, vars, returned, exec_vars, classes, cdll = run(exec_vars, code[index][1:-1], functions, vars, classes, cdll)
+                        return returnval, functions, vars, 1, exec_vars, classes, cdll
                     else:
-                        returnval_, functions_, vars, returned, exec_vars, classes = run(exec_vars, code[index][1:-1], functions, vars, classes)
+                        returnval_, functions_, vars, returned, exec_vars, classes, cdll = run(exec_vars, code[index][1:-1], functions, vars, classes, cdll)
             elif code[index] == "while":
                 index += 1
                 conditions = code[index]
@@ -438,14 +479,14 @@ def run(exec_vars: dict = {}, code: str = "", functions: dict={}, vars: dict={"P
                 conditions.replace("&&", " and ")
                 conditions.replace("!", " not ")  
                 index += 1
-                condtitions = eval_vars(exec_vars, functions, conditions, vars, classes)
+                condtitions = eval_vars(exec_vars, functions, conditions, vars, classes, cdll)
                 r = 1
                 while condtitions and r:
-                    returnval, functions_, vars, returned, exec_vars, classes = run(exec_vars, code[index][1:-1], functions, vars, classes)
-                    if returned == 1: return returnval, functions, vars, 1, exec_vars, classes
+                    returnval, functions_, vars, returned, exec_vars, classe, cdlls = run(exec_vars, code[index][1:-1], functions, vars, classes, cdll)
+                    if returned == 1: return returnval, functions, vars, 1, exec_vars, classes, cdll
                     if returned == 2:
                         r = 0
-                    condtitions = eval_vars(exec_vars, functions, conditions, vars, classes)
+                    condtitions = eval_vars(exec_vars, functions, conditions, vars, classes, cdll)
                 index += 1
             elif code[index] == "until":
                 index += 1
@@ -454,15 +495,42 @@ def run(exec_vars: dict = {}, code: str = "", functions: dict={}, vars: dict={"P
                 conditions.replace("&&", " and ")
                 conditions.replace("!", " not ")  
                 index += 1
-                condtitions = eval_vars(exec_vars, functions, conditions, vars, classes)
+                condtitions = eval_vars(exec_vars, functions, conditions, vars, classes, cdll)
                 r = 1
                 while not condtitions and r:
-                    returnval, functions_, vars, returned, exec_vars, classes = run(exec_vars, code[index][1:-1], functions, vars, classes)
-                    if returned == 1: return returnval, functions, vars, 1, exec_vars, classes
+                    returnval, functions_, vars, returned, exec_vars, classes, cdll = run(exec_vars, code[index][1:-1], functions, vars, classes, cdll)
+                    if returned == 1: return returnval, functions, vars, 1, exec_vars, classes, cdll
                     if returned == 2:
                         r = 0
-                    condtitions = eval_vars(exec_vars, functions, conditions, vars, classes)
+                    condtitions = eval_vars(exec_vars, functions, conditions, vars, classes, cdll)
                 index += 1
+            elif code[index] == "extern":
+                index += 1
+                filepath = code[index]
+                if filepath.startswith("\""):
+                    filepath = filepath[1:]
+                if filepath.endswith("\""):
+                    filepath = filepath[:-1]
+                index += 2
+                name = code[index]
+                cdll[name] = ctypes.CDLL(getfile(filepath))
+            elif code[index] == "dllarg":
+                index += 1
+                function__ = code[index]
+                index += 1
+                types = code[index]
+                exec(f'cdll[\"{function__.split(".")[0]}\"].{function__.split(".")[1]}.argtypes = {types}')
+            elif code[index] == "dllres":
+                index += 1
+                function__ = code[index]
+                index += 1
+                types = code[index]
+                exec(f'cdll[\"{function__.split(".")[0]}\"].{function__.split(".")[1]}.restype = {types}')
+            elif code[index].split(".")[0] in cdll:
+                name = code[index].split(".")[0]
+                func_name = code[index].split(".")[1]
+                index += 1
+                eval(f'cdll[\"{name}\"].{func_name}{eval_vars(exec_vars, functions, code[index], vars, classes, cdll)}')
             elif code[index] == "using":
                 index += 1
                 data = ""
@@ -470,7 +538,7 @@ def run(exec_vars: dict = {}, code: str = "", functions: dict={}, vars: dict={"P
                 with open_as_module(filepath + ".kshp") as file:
                     data = file.read()
                 vars = copy.deepcopy(vars)
-                _, functions1, vars1, returned, exec_vars, classes = run(exec_vars, data)
+                _, functions1, vars1, returned, exec_vars, classes, cdll = run(exec_vars, data)
                 filepath = os.path.basename(filepath)
                 functions2 = {}
                 vars2 = {}
@@ -518,7 +586,7 @@ def run(exec_vars: dict = {}, code: str = "", functions: dict={}, vars: dict={"P
                 index += 2  # Skip over "="
                 if code[index] != "new":
                     expr, index = find_until(code, index, ";")
-                    a = eval_vars(exec_vars, functions, "".join(expr), vars, classes)
+                    a = eval_vars(exec_vars, functions, "".join(expr), vars, classes, cdll)
                     debug("var", a, type(a))
                     vars[var_name] = a
                 else:
@@ -530,7 +598,7 @@ def run(exec_vars: dict = {}, code: str = "", functions: dict={}, vars: dict={"P
                     if inherit != "":
                         inherit_data = classes[inherit][0]
                         vars = copy.deepcopy(vars)
-                        __, functions1, vars1, _, exec_vars, classes = run(exec_vars, inherit_data.replace("self", var_name))
+                        __, functions1, vars1, _, exec_vars, classes, cdll = run(exec_vars, inherit_data.replace("self", var_name))
                         functions2 = {}
                         vars2 = {}
                         for i in functions1:
@@ -540,7 +608,7 @@ def run(exec_vars: dict = {}, code: str = "", functions: dict={}, vars: dict={"P
                         functions.update(functions2)
                         vars.update(vars2)
                     vars = copy.deepcopy(vars)
-                    __, functions1, vars1, _, exec_vars, classes = run(exec_vars, data.replace("self", var_name))
+                    __, functions1, vars1, _, exec_vars, classes, cdll = run(exec_vars, data.replace("self", var_name))
                     functions2 = {}
                     vars2 = {}
                     for i in functions1:
@@ -553,7 +621,7 @@ def run(exec_vars: dict = {}, code: str = "", functions: dict={}, vars: dict={"P
             elif code[index] == "println":
                 index += 1
                 expr = code[index]
-                expr = eval_vars(exec_vars, functions, expr, vars, classes)
+                expr = eval_vars(exec_vars, functions, expr, vars, classes, cdll)
                 if type(expr) != str:
                     print(expr)
                 else:
@@ -562,7 +630,7 @@ def run(exec_vars: dict = {}, code: str = "", functions: dict={}, vars: dict={"P
             elif code[index] == "print":
                 index += 1
                 expr = code[index]
-                expr = eval_vars(exec_vars, functions, expr, vars, classes)
+                expr = eval_vars(exec_vars, functions, expr, vars, classes, cdll)
                 if type(expr) != str:
                     print(expr, end="")
                 else:
@@ -577,7 +645,73 @@ def run(exec_vars: dict = {}, code: str = "", functions: dict={}, vars: dict={"P
                 vars.update({"this": vars[var_name]})
                 #print(expr)
                 if expr != "":
-                    expr = eval_vars(exec_vars, functions, "".join(expr), vars, classes)
+                    expr = eval_vars(exec_vars, functions, "".join(expr), vars, classes, cdll)
+                if op == "+=":
+                    vars[var_name] += expr
+                elif op == "-=":
+                    vars[var_name] -= expr
+                elif op == "*=":
+                    vars[var_name] *= expr
+                elif op == "/=":
+                    vars[var_name] /= expr
+                elif op == "//=":
+                    vars[var_name] //= expr
+                elif op == "**=":
+                    vars[var_name] **= expr
+                elif op == "%=":
+                    vars[var_name] %= expr
+                elif op == "&=":
+                    vars[var_name] &= expr
+                elif op == "|=":
+                    vars[var_name] |= expr
+                elif op == "^=":
+                    vars[var_name] ^= expr
+                elif op == ">>=":
+                    vars[var_name] >>= expr
+                elif op == "<<=":
+                    vars[var_name] <<= expr
+                elif op == "=":
+                    vars[var_name] = expr
+                elif op == "append":
+                    vars[var_name].append(expr)
+                elif op == "extend":
+                    vars[var_name].extend(expr)
+                elif op == "remove":
+                    vars[var_name].remove(expr)
+                elif op == "sort":
+                    vars[var_name].sort()
+                elif op == "reverse":
+                    vars[var_name].reverse()
+                elif op == "insert":
+                    vars[var_name].insert(expr[0], expr[1])
+                elif op == "clear":
+                    vars[var_name].clear()
+                elif op == "add":
+                    vars[var_name].add(expr)
+                elif op == "update":
+                    vars[var_name].update(expr)
+                elif op == "discard":
+                    vars[var_name].discard(expr)
+                elif op == "intersection_update":
+                    vars[var_name].intersection_update(expr)
+            elif code[index] == "*":
+                index += 1
+                var_name = code[index]
+                if var_name in vars:
+                    var_name = vars[var_name]
+                var_name = int(var_name)
+                for i in vars:
+                    if id(vars[i]) == var_name:
+                        var_name = i
+                        break
+                index += 1
+                op = code[index]
+                index += 1
+                expr, index = find_until(code, index, ";")
+                vars.update({"this": vars[var_name]})
+                #print(expr)
+                if expr != "":
+                    expr = eval_vars(exec_vars, functions, "".join(expr), vars, classes, cdll)
                 if op == "+=":
                     vars[var_name] += expr
                 elif op == "-=":
@@ -627,15 +761,15 @@ def run(exec_vars: dict = {}, code: str = "", functions: dict={}, vars: dict={"P
                 elif op == "intersection_update":
                     vars[var_name].intersection_update(expr)
             elif code[index] in functions:
-                #print(code[index], code[index + 1], vars, classes)
-                __, functions_, vars_, _, exec_vars, classes = run_function_modify(exec_vars, functions, code[index], code[index + 1], vars, classes)
+                #print(code[index], code[index + 1], vars, classes, cdll)
+                __, functions_, vars_, _, exec_vars, classes = run_function_modify(exec_vars, functions, code[index], code[index + 1], vars, classes, cdll)
                 functions.update(functions_)
                 vars.update(vars_)
             elif code[index] == "return":
                 index += 1
                 if code[index] != ";":
                     expr, index = find_until(code, index, ";")
-                    return eval_vars(exec_vars, functions, "".join(expr), vars, classes), functions, vars, 1, exec_vars, classes
+                    return eval_vars(exec_vars, functions, "".join(expr), vars, classes, cdll), functions, vars, 1, exec_vars, classes
                 else:
                     return None, functions, vars, 1, exec_vars, classes
             elif code[index] == "break":
@@ -667,14 +801,14 @@ def run(exec_vars: dict = {}, code: str = "", functions: dict={}, vars: dict={"P
                 con = con[1:-1].strip().split(",")
                 mvar = con[0]
                 iterable = con[1]
-                iterable = eval_vars(exec_vars, functions, iterable, vars, classes)
+                iterable = eval_vars(exec_vars, functions, iterable, vars, classes, cdll)
                 index += 1
                 for i in iterable:
                     update_vars = vars
                     update_vars.update({mvar: i})
-                    r, functions, vars, returned, exec_vars, classes = run(exec_vars, code[index], functions, vars, classes)
-                    if returned == 1: return returnval, functions, vars, 1, exec_vars, classes
-                    if returned == 2: return returnval, functions, vars, 0, exec_vars, classes
+                    r, functions, vars, returned, exec_vars, classes, cdll = run(exec_vars, code[index], functions, vars, classes, cdll)
+                    if returned == 1: return returnval, functions, vars, 1, exec_vars, classes, cdll
+                    if returned == 2: return returnval, functions, vars, 0, exec_vars, classes, cdll
                     vars.pop(mvar, "")    
                 index += 1
             elif code[index] == "try":
@@ -683,15 +817,15 @@ def run(exec_vars: dict = {}, code: str = "", functions: dict={}, vars: dict={"P
                 index += 1
                 ex = 0
                 try:
-                    returnval_, functions, vars, returned, exec_vars, classes = run(exec_vars, code[index][1:-1], functions, vars, classes)
-                    if returned == 1: return returnval, functions, vars, 1, exec_vars, classes
+                    returnval_, functions, vars, returned, exec_vars, classes, cdll = run(exec_vars, code[index][1:-1], functions, vars, classes, cdll)
+                    if returned == 1: return returnval, functions, vars, 1, exec_vars, classes, cdll
                 except:
                     ex = 1
                     vars = varsnapshot
                     functions = functionsnapshot
                     index += 2
-                    returnval_, functions, vars, returned, exec_vars, classes = run(exec_vars, code[index][1:-1], functions, vars, classes)
-                    if returned == 1: return returnval, functions, vars, 1, exec_vars, classes
+                    returnval_, functions, vars, returned, exec_vars, classe, cdlls = run(exec_vars, code[index][1:-1], functions, vars, classes, cdll)
+                    if returned == 1: return returnval, functions, vars, 1, exec_vars, classes, cdll
                 index += 1
                 if ex == 0:
                     index += 1
@@ -709,7 +843,7 @@ def run(exec_vars: dict = {}, code: str = "", functions: dict={}, vars: dict={"P
             print("Error: " + custom_trace(e) + " at index " + str(index) + ", name \"" + code[index] + "\".")
             break
     #print(vars, classes)
-    return returnval, functions, vars, 0, exec_vars, classes
+    return returnval, functions, vars, 0, exec_vars, classes, cdll
 import sys
 import math
 import random
@@ -786,8 +920,8 @@ if len(sys.argv) > 1:
         entry_point = a[1 + a.index("entrypoint")]
     except:
         pass
-    _, functions, vars, __, exec_vars, classes = run({}, open(sys.argv[1]).read())
-    run_function_modify(exec_vars, functions, entry_point, str(sys.argv), vars, classes)
+    _, functions, vars, __, exec_vars, classes, cdll = run({}, open(sys.argv[1]).read())
+    run_function_modify(exec_vars, functions, entry_point, str(sys.argv), vars, classes, cdll)
     sys.exit()
 print("K# IDLE version 1.4.3")
 print("Type \"help\" to get help.")
@@ -858,7 +992,7 @@ while True:
             if a == 0:
                 incontainer = 0
                 code += inp + "\n"
-                _, functions, vars, __, exec_vars, classes = run(exec_vars, inp, functions, vars, classes)
+                _, functions, vars, __, exec_vars, classes, cdll = run(exec_vars, inp, functions, vars, classes, cdll)
                 print()
             else:
                 incontainer = 1
@@ -872,6 +1006,6 @@ while True:
         multiline += inp + "\n"
         if not a:
             code += multiline + "\n"
-            _, functions, vars, __, exec_vars, classes = run(exec_vars, multiline, functions, vars, classes)
+            _, functions, vars, __, exec_vars, classes, cdll = run(exec_vars, multiline, functions, vars, classes, cdll)
             print()
             incontainer = 0

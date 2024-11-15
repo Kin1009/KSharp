@@ -85,3 +85,10 @@ func main(args) {
     print(b); # 2
 }
 ```
+Version 1.4.4: Added .dll file support
+Steps to call a function:
+1. Install that .dll (we're using user32, check Kin1009/user32)
+2. Initialize it by ```extern "user32.dll" as user32;```
+3. Param types: ```user32.MessageBoxW(void_p, wchar_p, wchar_p, uint);```. Note that we use {dllname}{function}.
+4. Return type: ```dllres user32.MessageBoxW(uint);```
+5. Call the function! ```user32.MessageBoxW(0, "hello", "Testing", 0);``` or if you want it to be in a var, ```var a = user32.MessageBoxW(0, "hello", "Testing", 0);```
