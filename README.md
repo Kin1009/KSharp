@@ -92,3 +92,10 @@ Steps to call a function:
 3. Param types: ```user32.MessageBoxW(void_p, wchar_p, wchar_p, uint);```. Note that we use {dllname}{function}.
 4. Return type: ```dllres user32.MessageBoxW(uint);```
 5. Call the function! ```user32.MessageBoxW(0, "hello", "Testing", 0);``` or if you want it to be in a var, ```var a = user32.MessageBoxW(0, "hello", "Testing", 0);```
+
+Version 1.4.5: Fixed .dll file support:
+1. Install that .dll (we're using user32)
+2. Initialize it by ```extern "user32.dll" as user32;```
+3. Function header: ```dllfunc uint user32.MessageBoxW(void, wchar, wchar, uint);```.
+4. Call the function! ```user32.MessageBoxW(0, "hello", "Testing", 0);``` or if you 
+want it to be in a var, ```var a = user32.MessageBoxW(0, "hello", "Testing", 0);```
