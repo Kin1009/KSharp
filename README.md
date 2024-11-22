@@ -3,7 +3,7 @@ K# is a programming language syntacically similar to V# or C# or C++ or python o
 
 Drive for K# 1.3.2 -> 1.4.5: https://drive.google.com/drive/folders/1ygNvL3y44Y0gZpFXp1G6X8_xtMitlw91?usp=sharing
 
-K# from 1.4.6 use a custom compile.bat so uhhh it fits into github
+K# from 1.4.6 use a custom compile.py so uhhh it fits into github
 
 All includable setup files will be placed here for convinence.
 # Version symbols
