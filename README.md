@@ -1,7 +1,9 @@
 # K#
 K# is a programming language syntacically similar to V# or C# or C++ or python or etc, but with some additions
 
-NOTE: The file size is too big so Drive for this: https://drive.google.com/drive/folders/1ygNvL3y44Y0gZpFXp1G6X8_xtMitlw91?usp=sharing
+Drive for K# 1.3.2 -> 1.4.5: https://drive.google.com/drive/folders/1ygNvL3y44Y0gZpFXp1G6X8_xtMitlw91?usp=sharing
+
+K# from 1.4.6 use a custom compile.bat so uhhh it fits into github
 
 All includable setup files will be placed here for convinence.
 # Version symbols
@@ -99,3 +101,5 @@ Version 1.4.5: Fixed .dll file support:
 3. Function header: ```dllfunc uint user32.MessageBoxW(void, wchar, wchar, uint);```.
 4. Call the function! ```user32.MessageBoxW(0, "hello", "Testing", 0);``` or if you 
 want it to be in a var, ```var a = user32.MessageBoxW(0, "hello", "Testing", 0);```
+
+Version 1.4.6: Fixed IDLE commands and make K# super small
